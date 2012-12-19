@@ -353,7 +353,7 @@ public class GSMPhone extends PhoneBase {
     /**
      * Notify any interested party of a Phone state change {@link PhoneConstants.State}
      */
-    /*package*/ void notifyPhoneStateChanged() {
+    /*package*/ public void notifyPhoneStateChanged() {
         mNotifier.notifyPhoneState(this);
     }
 
@@ -391,7 +391,7 @@ public class GSMPhone extends PhoneBase {
     }
 
     /*package*/
-    void notifyLocationChanged() {
+    public void notifyLocationChanged() {
         mNotifier.notifyCellLocation(this);
     }
 

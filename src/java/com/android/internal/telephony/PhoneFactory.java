@@ -28,7 +28,7 @@ import android.os.SystemProperties;
 //import com.android.internal.telephony.cdma.CDMALTEPhone;
 import com.android.internal.telephony.cdma.CdmaSubscriptionSourceManager;
 //import com.android.internal.telephony.gsm.GSMPhone;
-//import com.android.internal.telephony.sip.SipPhone;
+import com.android.internal.telephony.sip.SipPhone;
 import com.android.internal.telephony.sip.SipPhoneFactory;
 import com.android.internal.telephony.uicc.UiccController;
 

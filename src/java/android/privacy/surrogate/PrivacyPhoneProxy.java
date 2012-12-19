@@ -17,6 +17,7 @@ import android.os.Process;
 import com.android.internal.telephony.CallStateException;
 import com.android.internal.telephony.Connection;
 import com.android.internal.telephony.Phone;
+import com.android.internal.telephony.PhoneBase;
 import com.android.internal.telephony.PhoneProxy;
 import com.android.internal.telephony.PhoneSubInfo;
 import com.android.internal.telephony.UUSInfo;
@@ -42,7 +43,7 @@ public class PrivacyPhoneProxy extends PhoneProxy{
 	/** This PackageManager is needed to get package name if context is not available*/
 	private IPackageManager mPm;
 	
-	public PrivacyPhoneProxy(Phone mPhone, Context context) { //not sure if context is available, so test it!
+	public PrivacyPhoneProxy(PhoneBase mPhone, Context context) { //not sure if context is available, so test it!
 		super(mPhone);
 		if(context != null){
 			this.context = context;

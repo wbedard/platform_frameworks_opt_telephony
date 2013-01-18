@@ -16,6 +16,19 @@
 
 package com.android.internal.telephony;
 
+//BEGIN PRIVACY ADDED
+//--------------------------------------------------------
+//import com.android.internal.telephony.cdma.CDMAPhone;
+//import com.android.internal.telephony.cdma.CDMALTEPhone;
+//import com.android.internal.telephony.gsm.GSMPhone;
+import android.privacy.surrogate.PrivacyCDMAPhone;
+import android.privacy.surrogate.PrivacyCDMALTEPhone;
+import android.privacy.surrogate.PrivacyGSMPhone;
+import android.privacy.surrogate.PrivacySipPhone;
+import android.privacy.surrogate.PrivacyPhoneProxy;
+//--------------------------------------------------------
+//END PRIVACY ADDED
+
 import android.content.Context;
 import android.net.LocalServerSocket;
 import android.os.Looper;
@@ -24,24 +37,10 @@ import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.os.SystemProperties;
 
-//import com.android.internal.telephony.cdma.CDMAPhone;
-//import com.android.internal.telephony.cdma.CDMALTEPhone;
 import com.android.internal.telephony.cdma.CdmaSubscriptionSourceManager;
-//import com.android.internal.telephony.gsm.GSMPhone;
 import com.android.internal.telephony.sip.SipPhone;
 import com.android.internal.telephony.sip.SipPhoneFactory;
 import com.android.internal.telephony.uicc.UiccController;
-
-//--------------------------------------------------------
-import android.privacy.surrogate.PrivacyCDMAPhone;
-import android.privacy.surrogate.PrivacyCDMALTEPhone;
-import android.privacy.surrogate.PrivacyGSMPhone;
-import android.privacy.surrogate.PrivacySipPhone;
-//--------------------------------------------------------
-
-//BEGIN PRIVACY ADDED
-import android.privacy.surrogate.PrivacyPhoneProxy;
-//END PRIVACY ADDED
 
 /**
  * {@hide}

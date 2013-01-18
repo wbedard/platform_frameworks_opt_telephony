@@ -976,7 +976,7 @@ public abstract class SMSDispatcher extends Handler {
     protected void sendMultipartText(String destAddr, String scAddr,
             ArrayList<String> parts, ArrayList<PendingIntent> sentIntents,
             ArrayList<PendingIntent> deliveryIntents) {
-    	
+
         int refNumber = getNextConcatenatedRef() & 0x00FF;
         int msgCount = parts.size();
         int encoding = SmsConstants.ENCODING_UNKNOWN;
@@ -994,7 +994,7 @@ public abstract class SMSDispatcher extends Handler {
             encodingForParts[i] = details;
         }
 
-        for (int i = 0; i < msgCount; i++) { 
+        for (int i = 0; i < msgCount; i++) {
             SmsHeader.ConcatRef concatRef = new SmsHeader.ConcatRef();
             concatRef.refNumber = refNumber;
             concatRef.seqNumber = i + 1;  // 1-based sequence

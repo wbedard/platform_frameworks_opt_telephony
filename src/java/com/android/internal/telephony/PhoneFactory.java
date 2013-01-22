@@ -163,6 +163,7 @@ public class PhoneFactory {
                     //BEGIN PRIVACY ADDED
                     //sProxyPhone = new PhoneProxy(new GSMPhone(context,
                     //        sCommandsInterface, sPhoneNotifier));
+                    // **SM: why two layers of surrogates?
                     sProxyPhone = new PrivacyPhoneProxy(new PrivacyGSMPhone(context,
                             sCommandsInterface, sPhoneNotifier),context);
                     //END PRIVACY ADDED

@@ -16,6 +16,7 @@ import android.content.Context;
 import android.content.pm.IPackageManager;
 import android.os.ServiceManager;
 import android.privacy.IPrivacySettingsManager;
+import android.privacy.PrivacyServiceException;
 import android.privacy.PrivacySettings;
 import android.privacy.PrivacySettingsManager;
 import android.telephony.CellLocation;
@@ -45,11 +46,8 @@ import com.android.internal.telephony.PhoneConstants;
 public class PrivacyPhoneProxy extends PhoneProxy{
 
 	private static final String P_TAG = "PrivacyPhoneProxy";
-	
 	private PrivacySettingsManager pSetMan;
-	
 	private Context context;
-	
 	private boolean context_available;
 	
 	/** This PackageManager is needed to get package name if context is not available*/
@@ -60,8 +58,7 @@ public class PrivacyPhoneProxy extends PhoneProxy{
 		if(context != null){
 			this.context = context;
 			context_available = true;
-		}
-		else{
+		} else {
 			context_available = false;
 		}
 		initiate(context_available);
@@ -77,7 +74,7 @@ public class PrivacyPhoneProxy extends PhoneProxy{
 	private void initiate(boolean ctx_av){
 		if(ctx_av){
 			Log.i(P_TAG,"Context is available for package:" + context.getPackageName());
-		} else{
+		} else {
 			Log.e(P_TAG,"Context is not available for package: " + context.getPackageName());
 			mPm = IPackageManager.Stub.asInterface(ServiceManager.getService("package"));
 		}
@@ -94,15 +91,13 @@ public class PrivacyPhoneProxy extends PhoneProxy{
         		int uid = Process.myUid();
         		String[] package_names = mPm.getPackagesForUid(uid);
         		return package_names;
-        	}
-    		else{
+        	} else {
     			mPm = IPackageManager.Stub.asInterface(ServiceManager.getService("package"));
     			int uid = Process.myUid();
         		String[] package_names = mPm.getPackagesForUid(uid);
         		return package_names;
     		}
-    	}
-    	catch(Exception e){
+    	} catch(Exception e) {
     		e.printStackTrace();
     		Log.e(P_TAG,"something went wrong with getting package name");
     		return null;
@@ -111,191 +106,244 @@ public class PrivacyPhoneProxy extends PhoneProxy{
     
     @Override
     public Connection dial(String dialNumber) throws CallStateException{
-    	if(context_available){
-			PrivacySettings settings = pSetMan.getSettings(context.getPackageName(), -1);
-			if(pSetMan != null && settings != null && settings.getPhoneCallSetting() != PrivacySettings.REAL){
-				pSetMan.notification(context.getPackageName(), 0, PrivacySettings.EMPTY, PrivacySettings.DATA_PHONE_CALL, null, null);
-				throw new CallStateException();
-			}
-			else{
-				pSetMan.notification(context.getPackageName(), 0, PrivacySettings.REAL, PrivacySettings.DATA_PHONE_CALL, null, null);
-				return super.dial(dialNumber);
-			}
-		}
-    	else{
-    		String package_names[] = getPackageName();
-			boolean allowed = true;
-			PrivacySettings settings = null;
-			int package_trace = 0; //initalize default with 0, prevents array index out of bounds exception
-			if(package_names == null) return super.dial(dialNumber); 
-			for(int i=0;i<package_names.length;i++){
-				settings = pSetMan.getSettings(package_names[i], -1);
-				if(pSetMan != null && settings != null && settings.getPhoneCallSetting() != PrivacySettings.REAL){
-					allowed = false;
-					package_trace = i;
-					break;
-				}
-			}
-			if(allowed){
-				pSetMan.notification(package_names[package_trace], 0, PrivacySettings.REAL, PrivacySettings.DATA_PHONE_CALL, null, null);
-				return super.dial(dialNumber); 
-			}
-			else{
-				pSetMan.notification(package_names[package_trace], 0, PrivacySettings.EMPTY, PrivacySettings.DATA_PHONE_CALL, null, null);
-				throw new CallStateException();
-			}
-    	}
+        if (pSetMan == null) {
+            Log.e(P_TAG, "PrivacyPhoneProxy:dial: privacy service field is null");
+            throw new CallStateException();
+        }
+        
+        try {
+            if(context_available){
+                PrivacySettings settings = pSetMan.getSettings(context.getPackageName());
+                if (settings == null || settings.getPhoneCallSetting() == PrivacySettings.REAL) {
+                    pSetMan.notification(context.getPackageName(), PrivacySettings.REAL, PrivacySettings.DATA_PHONE_CALL, null);
+                    return super.dial(dialNumber);                    
+                } else {
+                    pSetMan.notification(context.getPackageName(), PrivacySettings.EMPTY, PrivacySettings.DATA_PHONE_CALL, null);
+                    throw new CallStateException();                    
+                }
+            } else {
+                String package_names[] = getPackageName();
+                boolean allowed = true;
+                PrivacySettings settings = null;
+                int package_trace = 0; //initalize default with 0, prevents array index out of bounds exception
+                if(package_names == null) return super.dial(dialNumber); // **SM: wha? 
+                for(int i=0;i<package_names.length;i++){
+                    settings = pSetMan.getSettings(package_names[i]);
+                    if (settings != null && settings.getPhoneCallSetting() != PrivacySettings.REAL) {
+                        allowed = false;
+                        package_trace = i;
+                        break;                        
+                    }
+                }
+                if(allowed) {
+                    pSetMan.notification(package_names[package_trace], PrivacySettings.REAL, PrivacySettings.DATA_PHONE_CALL, null);
+                    return super.dial(dialNumber); 
+                } else {
+                    pSetMan.notification(package_names[package_trace], PrivacySettings.EMPTY, PrivacySettings.DATA_PHONE_CALL, null);
+                    throw new CallStateException();
+                }
+            }
+        } catch (PrivacyServiceException e) {
+            Log.e(P_TAG, "PrivacyPhoneProxy:dial: PrivacyServiceException occurred", e);
+            throw new CallStateException();
+        }
     }
     
     @Override
-    public Connection dial (String dialNumber, UUSInfo uusInfo) throws CallStateException{
-    	if(context_available){
-			PrivacySettings settings = pSetMan.getSettings(context.getPackageName(), -1);
-			if(pSetMan != null && settings != null && settings.getPhoneCallSetting() != PrivacySettings.REAL){
-				pSetMan.notification(context.getPackageName(), 0, PrivacySettings.EMPTY, PrivacySettings.DATA_PHONE_CALL, null, null);
-				throw new CallStateException();
-			}
-			else{
-				pSetMan.notification(context.getPackageName(), 0, PrivacySettings.REAL, PrivacySettings.DATA_PHONE_CALL, null, null);
-				return super.dial(dialNumber, uusInfo);
-			}
-		}
-    	else{
-    		String package_names[] = getPackageName();
-			boolean allowed = true;
-			PrivacySettings settings = null;
-			int package_trace = 0; //initalize default with 0, prevents array index out of bounds exception
-			if(package_names == null) return super.dial(dialNumber, uusInfo);
-			for(int i=0;i<package_names.length;i++){
-				settings = pSetMan.getSettings(package_names[i], -1);
-				if(pSetMan != null && settings != null && settings.getPhoneCallSetting() != PrivacySettings.REAL){
-					allowed = false;
-					package_trace = i;
-					break;
-				}
-			}
-			if(allowed){
-				pSetMan.notification(package_names[package_trace], 0, PrivacySettings.REAL, PrivacySettings.DATA_PHONE_CALL, null, null);
-				return super.dial(dialNumber, uusInfo); 
-			}
-			else{
-				pSetMan.notification(package_names[package_trace], 0, PrivacySettings.EMPTY, PrivacySettings.DATA_PHONE_CALL, null, null);
-				throw new CallStateException();
-			}
-    	}
+    public Connection dial (String dialNumber, UUSInfo uusInfo) throws CallStateException{        
+        if (pSetMan == null) {
+            Log.e(P_TAG, "PrivacyPhoneProxy:dial: privacy service field is null");
+            throw new CallStateException();
+        }
+
+        try {
+            if(context_available){
+                PrivacySettings settings = pSetMan.getSettings(context.getPackageName());
+                if(settings != null && settings.getPhoneCallSetting() != PrivacySettings.REAL){
+                    pSetMan.notification(context.getPackageName(), PrivacySettings.EMPTY, PrivacySettings.DATA_PHONE_CALL, null);
+                    throw new CallStateException();
+                } else {
+                    pSetMan.notification(context.getPackageName(), PrivacySettings.REAL, PrivacySettings.DATA_PHONE_CALL, null);
+                    return super.dial(dialNumber, uusInfo);
+                }
+            } else {
+                String package_names[] = getPackageName();
+                boolean allowed = true;
+                PrivacySettings settings = null;
+                int package_trace = 0; //initalize default with 0, prevents array index out of bounds exception
+                if(package_names == null) return super.dial(dialNumber, uusInfo);
+                for(int i=0;i<package_names.length;i++){
+                    settings = pSetMan.getSettings(package_names[i]);
+                    if(settings != null && settings.getPhoneCallSetting() != PrivacySettings.REAL){
+                        allowed = false;
+                        package_trace = i;
+                        break;
+                    }
+                }
+                if (allowed) {
+                    pSetMan.notification(package_names[package_trace], PrivacySettings.REAL, PrivacySettings.DATA_PHONE_CALL, null);
+                    return super.dial(dialNumber, uusInfo); 
+                } else {
+                    pSetMan.notification(package_names[package_trace], PrivacySettings.EMPTY, PrivacySettings.DATA_PHONE_CALL, null);
+                    throw new CallStateException();
+                }
+            }
+        } catch (PrivacyServiceException e) {
+            Log.e(P_TAG, "PrivacyPhoneProxy:dial: PrivacyServiceException occurred", e);
+            throw new CallStateException();            
+        }
     }
 
 	@Override
 	public CellLocation getCellLocation() {
-		int phone_type = super.getPhoneType();
-		if(context_available){
-			PrivacySettings settings = pSetMan.getSettings(context.getPackageName(), Process.myUid());
-			if(pSetMan != null && settings != null && (settings.getLocationNetworkSetting() != PrivacySettings.REAL || settings.getLocationGpsSetting() != PrivacySettings.REAL)){
-				pSetMan.notification(context.getPackageName(), 0, settings.getLocationNetworkSetting(), PrivacySettings.DATA_LOCATION_NETWORK, null, settings);
-				Log.i(P_TAG,"package: " + context.getPackageName() + " BLOCKED for getCellLocation()");
-				switch(phone_type){
-					case PhoneConstants.PHONE_TYPE_GSM:
-						return new GsmCellLocation();
-					case PhoneConstants.PHONE_TYPE_CDMA:
-						return new CdmaCellLocation();
-					case PhoneConstants.PHONE_TYPE_NONE:
-						return null;
-					case PhoneConstants.PHONE_TYPE_SIP:
-						return new CdmaCellLocation();
-					default: //just in case, but normally this doesn't get a call!
-						return new GsmCellLocation();
-				}
-			}
-			else{
-				if(settings != null)
-					pSetMan.notification(context.getPackageName(), 0, PrivacySettings.REAL, PrivacySettings.DATA_LOCATION_NETWORK, null, settings);
-				Log.i(P_TAG,"package: " + context.getPackageName() + " ALLOWED for getCellLocation()");
-				return super.getCellLocation();
-			}
-		}
-		else{ //context is not available, go through uid!
-			String package_names[] = getPackageName();
-			boolean allowed = true;
-			PrivacySettings settings = null;
-			int package_trace = 0; //initalize default with 0, prevents array index out of bounds exception
-			if(package_names == null) return super.getCellLocation(); //we give cell location, because we can't get any package information in this process
-			for(int i=0;i<package_names.length;i++){
-				settings = pSetMan.getSettings(package_names[i], Process.myUid());
-				if(pSetMan != null && settings != null && (settings.getLocationNetworkSetting() != PrivacySettings.REAL || settings.getLocationGpsSetting() != PrivacySettings.REAL)){
-					allowed = false;
-					package_trace = i;
-					break;
-				}
-			}
-			if(allowed){
-				if(settings != null)
-					pSetMan.notification(package_names[package_trace], 0, PrivacySettings.REAL, PrivacySettings.DATA_LOCATION_NETWORK, null, settings);
-				Log.i(P_TAG,"package: " + package_names[package_trace] + " ALLOWED for getCellLocation()");
-				return super.getCellLocation();
-			}
-			else{
-				if(settings != null)
-					pSetMan.notification(package_names[package_trace], 0, settings.getLocationNetworkSetting(), PrivacySettings.DATA_LOCATION_NETWORK, null, settings);
-				Log.i(P_TAG,"package: " + package_names[package_trace] + " BLOCKED for getCellLocation()");
-				switch(phone_type){
-					case PhoneConstants.PHONE_TYPE_GSM:
-						return new GsmCellLocation();
-					case PhoneConstants.PHONE_TYPE_CDMA:
-						return new CdmaCellLocation();
-					case PhoneConstants.PHONE_TYPE_NONE:
-						return null;
-					case PhoneConstants.PHONE_TYPE_SIP:
-						return new CdmaCellLocation();
-					default: //just in case, but normally this doesn't get a call!
-						return new GsmCellLocation();
-				}
-			}
-		}
+	    int phone_type = super.getPhoneType();
+
+	    if (pSetMan == null) {
+            Log.e(P_TAG, "PrivacyPhoneProxy:CellLocation: privacy service field is null");
+            switch(phone_type){
+            case PhoneConstants.PHONE_TYPE_GSM:
+                return new GsmCellLocation();
+            case PhoneConstants.PHONE_TYPE_CDMA:
+                return new CdmaCellLocation();
+            case PhoneConstants.PHONE_TYPE_NONE:
+                return null;
+            case PhoneConstants.PHONE_TYPE_SIP:
+                return new CdmaCellLocation();
+            default: //just in case, but normally this doesn't get a call!
+                return new GsmCellLocation();
+            }
+	    }
+	    
+	    try {
+	        if(context_available){
+	            PrivacySettings settings = pSetMan.getSettings(context.getPackageName());
+	            if(settings != null && (settings.getLocationNetworkSetting() != PrivacySettings.REAL || settings.getLocationGpsSetting() != PrivacySettings.REAL)){
+	                pSetMan.notification(context.getPackageName(), settings.getLocationNetworkSetting(), PrivacySettings.DATA_LOCATION_NETWORK, null);
+	                Log.i(P_TAG,"package: " + context.getPackageName() + " BLOCKED for getCellLocation()");
+	                switch(phone_type){
+	                case PhoneConstants.PHONE_TYPE_GSM:
+	                    return new GsmCellLocation();
+	                case PhoneConstants.PHONE_TYPE_CDMA:
+	                    return new CdmaCellLocation();
+	                case PhoneConstants.PHONE_TYPE_NONE:
+	                    return null;
+	                case PhoneConstants.PHONE_TYPE_SIP:
+	                    return new CdmaCellLocation();
+	                default: //just in case, but normally this doesn't get a call!
+	                    return new GsmCellLocation();
+	                }
+	            } else {
+	                if(settings != null) {
+	                    pSetMan.notification(context.getPackageName(), PrivacySettings.REAL, PrivacySettings.DATA_LOCATION_NETWORK, null);
+	                }
+	                Log.i(P_TAG,"package: " + context.getPackageName() + " ALLOWED for getCellLocation()");
+	                return super.getCellLocation();
+	            }
+	        } else { //context is not available, go through uid!
+	            String package_names[] = getPackageName();
+	            boolean allowed = true;
+	            PrivacySettings settings = null;
+	            int package_trace = 0; //initalize default with 0, prevents array index out of bounds exception
+	            if(package_names == null) return super.getCellLocation(); //we give cell location, because we can't get any package information in this process
+	            for(int i=0;i<package_names.length;i++){
+	                settings = pSetMan.getSettings(package_names[i]);
+	                if(settings != null && (settings.getLocationNetworkSetting() != PrivacySettings.REAL || settings.getLocationGpsSetting() != PrivacySettings.REAL)){
+	                    allowed = false;
+	                    package_trace = i;
+	                    break;
+	                }
+	            }
+	            if (allowed) {
+	                if(settings != null)
+	                    pSetMan.notification(package_names[package_trace], PrivacySettings.REAL, PrivacySettings.DATA_LOCATION_NETWORK, null);
+	                Log.i(P_TAG,"package: " + package_names[package_trace] + " ALLOWED for getCellLocation()");
+	                return super.getCellLocation();
+	            } else {
+	                if(settings != null)
+	                    pSetMan.notification(package_names[package_trace], settings.getLocationNetworkSetting(), PrivacySettings.DATA_LOCATION_NETWORK, null);
+	                Log.i(P_TAG,"package: " + package_names[package_trace] + " BLOCKED for getCellLocation()");
+	                switch(phone_type){
+	                case PhoneConstants.PHONE_TYPE_GSM:
+	                    return new GsmCellLocation();
+	                case PhoneConstants.PHONE_TYPE_CDMA:
+	                    return new CdmaCellLocation();
+	                case PhoneConstants.PHONE_TYPE_NONE:
+	                    return null;
+	                case PhoneConstants.PHONE_TYPE_SIP:
+	                    return new CdmaCellLocation();
+	                default: //just in case, but normally this doesn't get a call!
+	                    return new GsmCellLocation();
+	                }
+	            }
+	        }
+	    } catch (PrivacyServiceException e) {
+	        Log.e(P_TAG, "PrivacyPhoneProxy:CellLocation: PrivacyServiceException occurred", e);
+	        switch(phone_type){
+	        case PhoneConstants.PHONE_TYPE_GSM:
+	            return new GsmCellLocation();
+	        case PhoneConstants.PHONE_TYPE_CDMA:
+	            return new CdmaCellLocation();
+	        case PhoneConstants.PHONE_TYPE_NONE:
+	            return null;
+	        case PhoneConstants.PHONE_TYPE_SIP:
+	            return new CdmaCellLocation();
+	        default: //just in case, but normally this doesn't get a call!
+	            return new GsmCellLocation();
+	        }
+	    }
 	}
 	
 	@Override
 	public PhoneConstants.DataState getDataConnectionState() {
-		if(context_available){
-			PrivacySettings settings = pSetMan.getSettings(context.getPackageName(), Process.myUid());
-			if(pSetMan != null && settings != null && settings.getNetworkInfoSetting() != PrivacySettings.REAL){
-				pSetMan.notification(context.getPackageName(), 0, settings.getNetworkInfoSetting(), PrivacySettings.DATA_NETWORK_INFO_CURRENT, null, settings);
-				Log.i(P_TAG,"package: " + context.getPackageName() + " BLOCKED for getDataConnection()");
-				return PhoneConstants.DataState.CONNECTING; //it's the best way to tell system that we are connecting
-			}
-			else{
-				if(settings != null)
-					pSetMan.notification(context.getPackageName(), 0, PrivacySettings.REAL, PrivacySettings.DATA_NETWORK_INFO_CURRENT, null, settings);
-				Log.i(P_TAG,"package: " + context.getPackageName() + " ALLOWED for getDataConnection()");
-				return super.getDataConnectionState();
-			}
-		}
-		else{
-			String package_names[] = getPackageName();
-			boolean allowed = true;
-			PrivacySettings settings = null;
-			int package_trace = 0; //initalize default with 0, prevents array index out of bounds exception
-			if(package_names == null) return super.getDataConnectionState();
-			for(int i=0;i<package_names.length;i++){
-				settings = pSetMan.getSettings(package_names[i], Process.myUid());
-				if(pSetMan != null && settings != null && settings.getNetworkInfoSetting() != PrivacySettings.REAL){
-					allowed = false;
-					package_trace = i;
-					break;
-				}
-			}
-			if(allowed){
-				if(settings != null)
-					pSetMan.notification(package_names[package_trace], 0, PrivacySettings.REAL, PrivacySettings.DATA_NETWORK_INFO_CURRENT, null, settings);
-				Log.i(P_TAG,"package: " + package_names[package_trace] + " ALLOWED for getDataConnection()");
-				return super.getDataConnectionState();
-			}
-			else{
-				if(settings != null)
-					pSetMan.notification(package_names[package_trace], 0, settings.getNetworkInfoSetting(), PrivacySettings.DATA_NETWORK_INFO_CURRENT, null, settings);
-				Log.i(P_TAG,"package: " + package_names[package_trace] + " BLOCKED for getDataConnection()");
-				return PhoneConstants.DataState.CONNECTING;
-			}
-		}
+
+	    if (pSetMan == null) {
+	        Log.e(P_TAG, "PrivacyPhoneProxy:getDataConnectionState: privacy service field is null");
+	        return PhoneConstants.DataState.CONNECTING;
+	    }
+
+	    try {
+	        if (context_available) {
+	            PrivacySettings settings = pSetMan.getSettings(context.getPackageName());
+	            if(settings != null && settings.getNetworkInfoSetting() != PrivacySettings.REAL){
+	                pSetMan.notification(context.getPackageName(), 0, settings.getNetworkInfoSetting(), PrivacySettings.DATA_NETWORK_INFO_CURRENT, null, settings);
+	                Log.i(P_TAG,"package: " + context.getPackageName() + " BLOCKED for getDataConnection()");
+	                return PhoneConstants.DataState.CONNECTING; //it's the best way to tell system that we are connecting
+	            } else {
+	                if(settings != null)
+	                    pSetMan.notification(context.getPackageName(), 0, PrivacySettings.REAL, PrivacySettings.DATA_NETWORK_INFO_CURRENT, null, settings);
+	                Log.i(P_TAG,"package: " + context.getPackageName() + " ALLOWED for getDataConnection()");
+	                return super.getDataConnectionState();
+	            }
+	        } else {
+	            String package_names[] = getPackageName();
+	            boolean allowed = true;
+	            PrivacySettings settings = null;
+	            int package_trace = 0; //initalize default with 0, prevents array index out of bounds exception
+	            if(package_names == null) return super.getDataConnectionState();
+	            for(int i=0;i<package_names.length;i++){
+	                settings = pSetMan.getSettings(package_names[i]);
+	                if(settings != null && settings.getNetworkInfoSetting() != PrivacySettings.REAL){
+	                    allowed = false;
+	                    package_trace = i;
+	                    break;
+	                }
+	            }
+	            if(allowed){
+	                if(settings != null)
+	                    pSetMan.notification(package_names[package_trace], 0, PrivacySettings.REAL, PrivacySettings.DATA_NETWORK_INFO_CURRENT, null, settings);
+	                Log.i(P_TAG,"package: " + package_names[package_trace] + " ALLOWED for getDataConnection()");
+	                return super.getDataConnectionState();
+	            } else {
+	                if(settings != null)
+	                    pSetMan.notification(package_names[package_trace], 0, settings.getNetworkInfoSetting(), PrivacySettings.DATA_NETWORK_INFO_CURRENT, null, settings);
+	                Log.i(P_TAG,"package: " + package_names[package_trace] + " BLOCKED for getDataConnection()");
+	                return PhoneConstants.DataState.CONNECTING;
+	            }
+	        }
+	    } catch (PrivacyServiceException e) {
+	        Log.e(P_TAG, "PrivacyPhoneProxy:getDataConnectionState: PrivacyServiceException occurred", e);
+	        return PhoneConstants.DataState.CONNECTING;
+	    }
 	}
 	
 //	@Override
@@ -317,46 +365,53 @@ public class PrivacyPhoneProxy extends PhoneProxy{
 	@Override
 	public SignalStrength getSignalStrength() {
 		SignalStrength output = new SignalStrength();
-		if(context_available){
-			PrivacySettings settings = pSetMan.getSettings(context.getPackageName(), Process.myUid());
-			if(pSetMan != null && settings != null && settings.getNetworkInfoSetting() != PrivacySettings.REAL){
-				pSetMan.notification(context.getPackageName(), 0, settings.getNetworkInfoSetting(), PrivacySettings.DATA_NETWORK_INFO_CURRENT, null, settings);
-				Log.i(P_TAG,"package: " + context.getPackageName() + " BLOCKED for getSignalStrength()");
-				return output;
-			}
-			else{
-				if(settings != null)
-					pSetMan.notification(context.getPackageName(), 0, PrivacySettings.REAL, PrivacySettings.DATA_NETWORK_INFO_CURRENT, null, settings);
-				Log.i(P_TAG,"package: " + context.getPackageName() + " ALLOWED for getSignalStrength()");
-				return super.getSignalStrength();
-			}
+		if (pSetMan == null) {
+		    Log.e(P_TAG, "PrivacyPhoneProxy:getSignalStrength: privacy service field is null");
+		    return output;
 		}
-		else{
-			String package_names[] = getPackageName();
-			boolean allowed = true;
-			PrivacySettings settings = null;
-			int package_trace = 0; //initalize default with 0, prevents array index out of bounds exception
-			if(package_names == null) return super.getSignalStrength();
-			for(int i=0;i<package_names.length;i++){
-				settings = pSetMan.getSettings(package_names[i], Process.myUid());
-				if(pSetMan != null && settings != null && settings.getNetworkInfoSetting() != PrivacySettings.REAL){
-					allowed = false;
-					package_trace = i;
-					break;
-				}
-			}
-			if(allowed){
-				if(settings != null)
-					pSetMan.notification(package_names[package_trace], 0, PrivacySettings.REAL, PrivacySettings.DATA_NETWORK_INFO_CURRENT, null, settings);
-				Log.i(P_TAG,"package: " + package_names[package_trace] + " ALLOWED for getSignalStrength()");
-				return super.getSignalStrength();
-			}
-			else{
-				if(settings != null)
-					pSetMan.notification(package_names[package_trace], 0, settings.getNetworkInfoSetting(), PrivacySettings.DATA_NETWORK_INFO_CURRENT, null, settings);
-				Log.i(P_TAG,"package: " + package_names[package_trace] + " BLOCKED for getSignalStrength()");
-				return output;
-			}
+		
+		try {
+		    if(context_available){
+		        PrivacySettings settings = pSetMan.getSettings(context.getPackageName());
+		        if(settings != null && settings.getNetworkInfoSetting() != PrivacySettings.REAL){
+		            pSetMan.notification(context.getPackageName(), 0, settings.getNetworkInfoSetting(), PrivacySettings.DATA_NETWORK_INFO_CURRENT, null, settings);
+		            Log.i(P_TAG,"package: " + context.getPackageName() + " BLOCKED for getSignalStrength()");
+		            return output;
+		        } else {
+		            if(settings != null)
+		                pSetMan.notification(context.getPackageName(), 0, PrivacySettings.REAL, PrivacySettings.DATA_NETWORK_INFO_CURRENT, null, settings);
+		            Log.i(P_TAG,"package: " + context.getPackageName() + " ALLOWED for getSignalStrength()");
+		            return super.getSignalStrength();
+		        }
+		    } else {
+		        String package_names[] = getPackageName();
+		        boolean allowed = true;
+		        PrivacySettings settings = null;
+		        int package_trace = 0; //initalize default with 0, prevents array index out of bounds exception
+		        if(package_names == null) return super.getSignalStrength();
+		        for(int i=0;i<package_names.length;i++){
+		            settings = pSetMan.getSettings(package_names[i]);
+		            if(settings != null && settings.getNetworkInfoSetting() != PrivacySettings.REAL){
+		                allowed = false;
+		                package_trace = i;
+		                break;
+		            }
+		        }
+		        if(allowed){
+		            if(settings != null)
+		                pSetMan.notification(package_names[package_trace], 0, PrivacySettings.REAL, PrivacySettings.DATA_NETWORK_INFO_CURRENT, null, settings);
+		            Log.i(P_TAG,"package: " + package_names[package_trace] + " ALLOWED for getSignalStrength()");
+		            return super.getSignalStrength();
+		        } else {
+		            if(settings != null)
+		                pSetMan.notification(package_names[package_trace], 0, settings.getNetworkInfoSetting(), PrivacySettings.DATA_NETWORK_INFO_CURRENT, null, settings);
+		            Log.i(P_TAG,"package: " + package_names[package_trace] + " BLOCKED for getSignalStrength()");
+		            return output;
+		        }
+		    }
+		} catch (PrivacyServiceException e) {
+		    Log.e(P_TAG, "PrivacyPhoneProxy:getSignalStrength: PrivacyServiceException occurred");
+		    return output;
 		}
 	}
 	
@@ -367,52 +422,60 @@ public class PrivacyPhoneProxy extends PhoneProxy{
 
 	@Override
 	public String getLine1Number() {
-	   if(context_available){
-		   String packageName = context.getPackageName();
-	       int uid = Process.myUid();
-	       PrivacySettings pSet = pSetMan.getSettings(packageName, uid);
-	       String output;
-	       if (pSet != null && pSet != null && pSet.getLine1NumberSetting() != PrivacySettings.REAL) {
-	           output = pSet.getLine1Number(); // can be empty, custom or random
-	           pSetMan.notification(packageName, uid, pSet.getLine1NumberSetting(), PrivacySettings.DATA_LINE_1_NUMBER, output, pSet);
-	           Log.i(P_TAG,"package: " + context.getPackageName() + " BLOCKED for getLine1Number()");
-	       } else {
-	           output = super.getLine1Number();
-	           pSetMan.notification(packageName, uid, PrivacySettings.REAL, PrivacySettings.DATA_LINE_1_NUMBER, output, pSet);
-	           Log.i(P_TAG,"package: " + context.getPackageName() + " ALLOWED for getLine1Number()");
-	       }
-	       return output;
-	   }
-	   else{
-		    String package_names[] = getPackageName();
-			boolean allowed = true;
-			PrivacySettings settings = null;
-			String output;
-			int package_trace = 0; //initalize default with 0, prevents array index out of bounds exception
-			if(package_names == null) return super.getLine1Number();
-			for(int i=0;i<package_names.length;i++){
-				settings = pSetMan.getSettings(package_names[i], Process.myUid());
-				if(pSetMan != null && settings != null && settings.getLine1NumberSetting() != PrivacySettings.REAL){
-					allowed = false;
-					package_trace = i;
-					break;
-				}
-			}
-			if(allowed){
-				output = super.getLine1Number();
-				if(settings != null)
-					pSetMan.notification(package_names[package_trace], Process.myUid(), PrivacySettings.REAL, PrivacySettings.DATA_LINE_1_NUMBER, output, settings);
-				Log.i(P_TAG,"package: " + package_names[package_trace] + " ALLOWED for getLine1Number()");
-				return output;
-			}
-			else{
-				output = settings.getLine1Number();
-				if(settings != null)
-					pSetMan.notification(package_names[package_trace], Process.myUid(), settings.getLine1NumberSetting(), PrivacySettings.DATA_LINE_1_NUMBER, output, settings);
-				Log.i(P_TAG,"package: " + package_names[package_trace] + " BLOCKED for getLine1Number()");
-				return output;
-			}
-	   }
+	    if (pSetMan == null) {
+	        Log.e(P_TAG, "PrivacyPhoneProxy:getLine1Number: privacy service field is null");
+	        return "";
+	    }
+
+	    try {
+	        if(context_available){
+	            String packageName = context.getPackageName();
+	            int uid = Process.myUid();
+	            PrivacySettings pSet = pSetMan.getSettings(packageName, uid);
+	            String output;
+	            if (pSet != null && pSet != null && pSet.getLine1NumberSetting() != PrivacySettings.REAL) {
+	                output = pSet.getLine1Number(); // can be empty, custom or random
+	                pSetMan.notification(packageName, uid, pSet.getLine1NumberSetting(), PrivacySettings.DATA_LINE_1_NUMBER, output, pSet);
+	                Log.i(P_TAG,"package: " + context.getPackageName() + " BLOCKED for getLine1Number()");
+	            } else {
+	                output = super.getLine1Number();
+	                pSetMan.notification(packageName, uid, PrivacySettings.REAL, PrivacySettings.DATA_LINE_1_NUMBER, output, pSet);
+	                Log.i(P_TAG,"package: " + context.getPackageName() + " ALLOWED for getLine1Number()");
+	            }
+	            return output;
+	        } else {
+	            String package_names[] = getPackageName();
+	            boolean allowed = true;
+	            PrivacySettings settings = null;
+	            String output;
+	            int package_trace = 0; //initalize default with 0, prevents array index out of bounds exception
+	            if(package_names == null) return super.getLine1Number();
+	            for(int i=0;i<package_names.length;i++){
+	                settings = pSetMan.getSettings(package_names[i]);
+	                if(settings != null && settings.getLine1NumberSetting() != PrivacySettings.REAL){
+	                    allowed = false;
+	                    package_trace = i;
+	                    break;
+	                }
+	            }
+	            if (allowed) {
+	                output = super.getLine1Number();
+	                if(settings != null)
+	                    pSetMan.notification(package_names[package_trace], PrivacySettings.REAL, PrivacySettings.DATA_LINE_1_NUMBER, output);
+	                Log.i(P_TAG,"package: " + package_names[package_trace] + " ALLOWED for getLine1Number()");
+	                return output;
+	            } else {
+	                output = settings.getLine1Number();
+	                if(settings != null)
+	                    pSetMan.notification(package_names[package_trace], settings.getLine1NumberSetting(), PrivacySettings.DATA_LINE_1_NUMBER, output);
+	                Log.i(P_TAG,"package: " + package_names[package_trace] + " BLOCKED for getLine1Number()");
+	                return output;
+	            }
+	        }
+	    } catch (PrivacyServiceException e) {
+            Log.e(P_TAG, "PrivacyPhoneProxy:getLine1Number: PrivacyServiceException occurred");
+            return "";
+	    }
 	}
 	
 	/**
@@ -440,52 +503,62 @@ public class PrivacyPhoneProxy extends PhoneProxy{
 	
 	@Override
 	public String getDeviceId() {
-		if(context_available){
-			String packageName = context.getPackageName();
-	        int uid = Process.myUid();
-	        PrivacySettings pSet = pSetMan.getSettings(packageName, uid);
-	        String output;
-	        if (pSet != null && pSet != null && pSet.getDeviceIdSetting() != PrivacySettings.REAL) {
-	            output = pSet.getDeviceId(); // can be empty, custom or random
-	            pSetMan.notification(packageName, uid, pSet.getDeviceIdSetting(), PrivacySettings.DATA_DEVICE_ID, output, pSet);
-	            Log.i(P_TAG,"package: " + context.getPackageName() + " BLOCKED for getDeviceId()");
+	    if (pSetMan == null) {
+	        Log.e(P_TAG, "PrivacyPhoneProxy:getDeviceId: privacy service field is null");
+	        return "";
+	    }
+
+	    try {
+	        if(context_available){
+	            String packageName = context.getPackageName();
+	            int uid = Process.myUid();
+	            PrivacySettings pSet = pSetMan.getSettings(packageName);
+	            String output;
+	            if (pSet != null && pSet.getDeviceIdSetting() != PrivacySettings.REAL) {
+	                output = pSet.getDeviceId(); // can be empty, custom or random
+	                pSetMan.notification(packageName, pSet.getDeviceIdSetting(), PrivacySettings.DATA_DEVICE_ID, output);
+	                Log.i(P_TAG,"package: " + context.getPackageName() + " BLOCKED for getDeviceId()");
+	            } else {
+	                output = super.getDeviceId();
+	                pSetMan.notification(packageName, PrivacySettings.REAL, PrivacySettings.DATA_DEVICE_ID, output);
+	                Log.i(P_TAG,"package: " + context.getPackageName() + " ALLOWED for getDeviceId()");
+	            }
+	            return output;
 	        } else {
-	            output = super.getDeviceId();
-	            pSetMan.notification(packageName, uid, PrivacySettings.REAL, PrivacySettings.DATA_DEVICE_ID, output, pSet);
-	            Log.i(P_TAG,"package: " + context.getPackageName() + " ALLOWED for getDeviceId()");
+	            String package_names[] = getPackageName();
+	            boolean allowed = true;
+	            PrivacySettings settings = null;
+	            String output;
+	            int package_trace = 0; //initalize default with 0, prevents array index out of bounds exception
+	            if (package_names == null) return super.getDeviceId();
+	            for (int i=0;i<package_names.length;i++) {
+	                settings = pSetMan.getSettings(package_names[i]);
+	                if (settings != null && settings.getDeviceIdSetting() != PrivacySettings.REAL) {
+	                    allowed = false;
+	                    package_trace = i;
+	                    break;
+	                }
+	            }
+	            if (allowed) {
+	                output = super.getDeviceId();
+	                if(settings != null) {
+	                    pSetMan.notification(package_names[package_trace], PrivacySettings.REAL, PrivacySettings.DATA_DEVICE_ID, output);
+	                }
+	                Log.i(P_TAG,"package: " + package_names[package_trace] + " ALLOWED for getDeviceId()");
+	                return output;
+	            } else {
+	                output = settings.getDeviceId();
+	                if(settings != null) {
+	                    pSetMan.notification(package_names[package_trace], settings.getDeviceIdSetting(), PrivacySettings.DATA_DEVICE_ID, output);
+	                }
+	                Log.i(P_TAG,"package: " + package_names[package_trace] + " BLOCKED for getDeviceId()");
+	                return output;
+	            }
 	        }
-	        return output;
-		}
-		else{
-			String package_names[] = getPackageName();
-			boolean allowed = true;
-			PrivacySettings settings = null;
-			String output;
-			int package_trace = 0; //initalize default with 0, prevents array index out of bounds exception
-			if(package_names == null) return super.getDeviceId();
-			for(int i=0;i<package_names.length;i++){
-				settings = pSetMan.getSettings(package_names[i], Process.myUid());
-				if(pSetMan != null && settings != null && settings.getDeviceIdSetting() != PrivacySettings.REAL){
-					allowed = false;
-					package_trace = i;
-					break;
-				}
-			}
-			if(allowed){
-				output = super.getDeviceId();
-				if(settings != null)
-					pSetMan.notification(package_names[package_trace], Process.myUid(), PrivacySettings.REAL, PrivacySettings.DATA_DEVICE_ID, output, settings);
-				Log.i(P_TAG,"package: " + package_names[package_trace] + " ALLOWED for getDeviceId()");
-				return output;
-			}
-			else{
-				output = settings.getDeviceId();
-				if(settings != null)
-					pSetMan.notification(package_names[package_trace], Process.myUid(), settings.getDeviceIdSetting(), PrivacySettings.DATA_DEVICE_ID, output, settings);
-				Log.i(P_TAG,"package: " + package_names[package_trace] + " BLOCKED for getDeviceId()");
-				return output;
-			}
-	   }
+	    } catch (PrivacyServiceException e) {
+	        Log.e(P_TAG, "PrivacyPhoneProxy:getDeviceId: PrivacyServiceException occurred");
+	        return "";
+	    }
 	}
 	
 	/**
@@ -498,53 +571,61 @@ public class PrivacyPhoneProxy extends PhoneProxy{
 	
 	@Override
 	public String getSubscriberId() {
-		if(context_available){
-			String packageName = context.getPackageName();
-	        int uid = Process.myUid();
-	        PrivacySettings pSet = pSetMan.getSettings(packageName, uid);
-	        String output;
-	        if (pSet != null && pSet != null && pSet.getSubscriberIdSetting() != PrivacySettings.REAL) {
-	            output = pSet.getSubscriberId(); // can be empty, custom or random
-	            pSetMan.notification(packageName, uid, pSet.getSubscriberIdSetting(), PrivacySettings.DATA_SUBSCRIBER_ID, output, pSet);
-	            Log.i(P_TAG,"package: " + context.getPackageName() + " BLOCKED for getSubscriberId()");
+	    if (pSetMan == null) {
+	        Log.e(P_TAG, "PrivacyPhoneProxy:getSubscriberId: privacy service field is null");
+	        return "";
+	    }
+
+	    try {
+	        if(context_available){
+	            String packageName = context.getPackageName();
+	            PrivacySettings pSet = pSetMan.getSettings(packageName);
+	            String output;
+	            if (pSet != null && pSet.getSubscriberIdSetting() != PrivacySettings.REAL) {
+	                output = pSet.getSubscriberId(); // can be empty, custom or random
+	                pSetMan.notification(packageName, pSet.getSubscriberIdSetting(), PrivacySettings.DATA_SUBSCRIBER_ID, output);
+	                Log.i(P_TAG,"package: " + context.getPackageName() + " BLOCKED for getSubscriberId()");
+	            } else {
+	                output = super.getSubscriberId();
+	                pSetMan.notification(packageName, PrivacySettings.REAL, PrivacySettings.DATA_SUBSCRIBER_ID, output);   
+	                Log.i(P_TAG,"package: " + context.getPackageName() + " ALLOWED for getSubscriberId()");
+	            }
+	            return output;
 	        } else {
-	            output = super.getSubscriberId();
-	            pSetMan.notification(packageName, uid, PrivacySettings.REAL, PrivacySettings.DATA_SUBSCRIBER_ID, output, pSet);   
-	            Log.i(P_TAG,"package: " + context.getPackageName() + " ALLOWED for getSubscriberId()");
+	            String package_names[] = getPackageName();
+	            boolean allowed = true;
+	            PrivacySettings settings = null;
+	            String output;
+	            int package_trace = 0; //initalize default with 0, prevents array index out of bounds exception
+	            if(package_names == null) return super.getSubscriberId();
+	            for(int i=0;i<package_names.length;i++){
+	                settings = pSetMan.getSettings(package_names[i]);
+	                if(settings != null && settings.getSubscriberIdSetting() != PrivacySettings.REAL){
+	                    allowed = false;
+	                    package_trace = i;
+	                    break;
+	                }
+	            }
+	            if (allowed) {
+	                output = super.getSubscriberId();
+	                if(settings != null) {
+	                    pSetMan.notification(package_names[package_trace], PrivacySettings.REAL, PrivacySettings.DATA_SUBSCRIBER_ID, output);
+	                }
+	                Log.i(P_TAG,"package: " + package_names[package_trace] + " ALLOWED for getSubscriberId()");
+	                return output;
+	            } else {
+	                output = settings.getSubscriberId();
+	                if(settings != null) {
+	                    pSetMan.notification(package_names[package_trace], settings.getSubscriberIdSetting(), PrivacySettings.DATA_SUBSCRIBER_ID, output);
+	                }
+	                Log.i(P_TAG,"package: " + package_names[package_trace] + " BLOCKED for getSubscriberId()");
+	                return output;
+	            }
 	        }
-	        return output;
-		}
-		else{
-			String package_names[] = getPackageName();
-			boolean allowed = true;
-			PrivacySettings settings = null;
-			String output;
-			int package_trace = 0; //initalize default with 0, prevents array index out of bounds exception
-			if(package_names == null) return super.getSubscriberId();
-			for(int i=0;i<package_names.length;i++){
-				settings = pSetMan.getSettings(package_names[i], Process.myUid());
-				if(pSetMan != null && settings != null && settings.getSubscriberIdSetting() != PrivacySettings.REAL){
-					allowed = false;
-					package_trace = i;
-					break;
-				}
-			}
-			if(allowed){
-				output = super.getSubscriberId();
-				if(settings != null)
-					pSetMan.notification(package_names[package_trace], Process.myUid(), PrivacySettings.REAL, PrivacySettings.DATA_SUBSCRIBER_ID, output, settings);      
-				Log.i(P_TAG,"package: " + package_names[package_trace] + " ALLOWED for getSubscriberId()");
-				return output;
-			}
-			else{
-				output = settings.getSubscriberId();
-				if(settings != null)
-					pSetMan.notification(package_names[package_trace], Process.myUid(), settings.getSubscriberIdSetting(), PrivacySettings.DATA_SUBSCRIBER_ID, output, settings);
-				Log.i(P_TAG,"package: " + package_names[package_trace] + " BLOCKED for getSubscriberId()");
-				return output;
-			}
-		}
-		
+	    } catch (PrivacyServiceException e) {
+	        Log.e(P_TAG, "PrivacyPhoneProxy:getSubscriberId: PrivacyServiceException occurred");
+	        return "";
+	    }
 	}
 	
 	/**
@@ -591,54 +672,66 @@ public class PrivacyPhoneProxy extends PhoneProxy{
 	
 	@Override
 	public ServiceState getServiceState(){
-		ServiceState output;
-		if(context_available){
-			PrivacySettings settings = pSetMan.getSettings(context.getPackageName(), Process.myUid());
-			if(pSetMan != null && settings != null && settings.getNetworkInfoSetting() != PrivacySettings.REAL){
-				pSetMan.notification(context.getPackageName(), 0, settings.getNetworkInfoSetting(), PrivacySettings.DATA_NETWORK_INFO_CURRENT, null, settings);
-				Log.i(P_TAG,"package: " + context.getPackageName() + " BLOCKED for getServiceState()");
-				output = super.getServiceState();
-				output.setOperatorName("", "", "");
-				//output.setRadioTechnology(-1);
-				return output;
-			}
-			else{
-				if(settings != null)
-					pSetMan.notification(context.getPackageName(), 0, PrivacySettings.REAL, PrivacySettings.DATA_NETWORK_INFO_CURRENT, null, settings);
-				Log.i(P_TAG,"package: " + context.getPackageName() + " ALLOWED for getServiceState()");
-				return super.getServiceState();
-			}
-		}
-		else{
-			String package_names[] = getPackageName();
-			boolean allowed = true;
-			PrivacySettings settings = null;
-			int package_trace = 0; //initalize default with 0, prevents array index out of bounds exception
-			if(package_names == null) return super.getServiceState();
-			for(int i=0;i<package_names.length;i++){
-				settings = pSetMan.getSettings(package_names[i], Process.myUid());
-				if(pSetMan != null && settings != null && settings.getNetworkInfoSetting() != PrivacySettings.REAL){
-					allowed = false;
-					package_trace = i;
-					break;
-				}
-			}
-			if(allowed){
-				if(settings != null)
-					pSetMan.notification(package_names[package_trace], 0, PrivacySettings.REAL, PrivacySettings.DATA_NETWORK_INFO_CURRENT, null, settings);
-				Log.i(P_TAG,"package: " + package_names[package_trace] + " ALLOWED for getServiceState()");
-				return super.getServiceState();
-			}
-			else{
-				if(settings != null)
-					pSetMan.notification(package_names[package_trace], 0, settings.getNetworkInfoSetting(), PrivacySettings.DATA_NETWORK_INFO_CURRENT, null, settings);
-				Log.i(P_TAG,"package: " + package_names[package_trace] + " BLOCKED for getServiceState()");
-				output = super.getServiceState();
-				output.setOperatorName("", "", "");
-				return output;
-			}
-		}
+	    ServiceState output;
+
+	    if (pSetMan == null) {
+	        Log.e(P_TAG, "PrivacyPhoneProxy:getDeviceId: privacy service field is null");
+	        output = super.getServiceState();
+	        output.setOperatorName("", "", "");
+	        return output;
+	    }
+
+	    try {
+	        if(context_available){
+	            PrivacySettings settings = pSetMan.getSettings(context.getPackageName());
+	            if(settings != null && settings.getNetworkInfoSetting() != PrivacySettings.REAL){
+	                pSetMan.notification(context.getPackageName(), settings.getNetworkInfoSetting(), PrivacySettings.DATA_NETWORK_INFO_CURRENT, null);
+	                Log.i(P_TAG,"package: " + context.getPackageName() + " BLOCKED for getServiceState()");
+	                output = super.getServiceState();
+	                output.setOperatorName("", "", "");
+	                //output.setRadioTechnology(-1);
+	                return output;
+	            } else {
+	                if(settings != null) {
+	                    pSetMan.notification(context.getPackageName(), PrivacySettings.REAL, PrivacySettings.DATA_NETWORK_INFO_CURRENT, null);
+	                }
+	                Log.i(P_TAG,"package: " + context.getPackageName() + " ALLOWED for getServiceState()");
+	                return super.getServiceState();
+	            }
+	        } else {
+	            String package_names[] = getPackageName();
+	            boolean allowed = true;
+	            PrivacySettings settings = null;
+	            int package_trace = 0; //initalize default with 0, prevents array index out of bounds exception
+	            if (package_names == null) return super.getServiceState();
+	            for (int i=0;i<package_names.length;i++) {
+	                settings = pSetMan.getSettings(package_names[i]);
+	                if(settings != null && settings.getNetworkInfoSetting() != PrivacySettings.REAL) {
+	                    allowed = false;
+	                    package_trace = i;
+	                    break;
+	                }
+	            }
+	            if (allowed) {
+	                if(settings != null) {
+	                    pSetMan.notification(package_names[package_trace], PrivacySettings.REAL, PrivacySettings.DATA_NETWORK_INFO_CURRENT, null);
+	                }
+	                Log.i(P_TAG,"package: " + package_names[package_trace] + " ALLOWED for getServiceState()");
+	                return super.getServiceState();
+	            } else {
+	                if(settings != null) {
+	                    pSetMan.notification(package_names[package_trace], settings.getNetworkInfoSetting(), PrivacySettings.DATA_NETWORK_INFO_CURRENT, null);
+	                }
+	                Log.i(P_TAG,"package: " + package_names[package_trace] + " BLOCKED for getServiceState()");
+	                output = super.getServiceState();
+	                output.setOperatorName("", "", "");
+	                return output;
+	            }
+	        }
+	    } catch (PrivacyServiceException e) {
+	        output = super.getServiceState();
+	        output.setOperatorName("", "", "");
+	        return output;
+	    }
 	}
-	
-	
 }

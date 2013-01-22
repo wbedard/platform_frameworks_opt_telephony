@@ -302,16 +302,20 @@ public abstract class SMSDispatcher extends Handler {
      * @param accessMode PrivacySettings.REAL || PrivacySettings.CUSTOM || PrivacySettings.RANDOM || PrivacySettings.EMPTY
      */
     protected void notify(int accessType,String packageName, byte accessMode){
-    	switch(accessType){
-    		case ACCESS_TYPE_SMS_MMS:
-    			//Log.i("PrivacySmsManager","now send notify information outgoing sms");
-    			pSetMan.notification(packageName, 0, accessMode, PrivacySettings.DATA_SMS_SEND, null, null);
-    			break;
-    		case ACCESS_TYPE_ICC:
-    			//Log.i("PrivacySmsManager","now send notify information ICC ACCESS");
-    			pSetMan.notification(packageName, 0, accessMode, PrivacySettings.DATA_ICC_ACCESS, null, null);
-    			break;
-    	}
+        try {
+            switch(accessType){
+            case ACCESS_TYPE_SMS_MMS:
+                //Log.i("PrivacySmsManager","now send notify information outgoing sms");
+                pSetMan.notification(packageName, accessMode, PrivacySettings.DATA_SMS_SEND, null);
+                break;
+            case ACCESS_TYPE_ICC:
+                //Log.i("PrivacySmsManager","now send notify information ICC ACCESS");
+                pSetMan.notification(packageName, accessMode, PrivacySettings.DATA_ICC_ACCESS, null);
+                break;
+            }
+        } catch (Exception e) {
+            Log.d(P_TAG, "SMSDispatcher:notify: Exception when sending notification", e);
+        }
     }
     
     //-------------------------------------------------------------++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-----------------------------------------------------

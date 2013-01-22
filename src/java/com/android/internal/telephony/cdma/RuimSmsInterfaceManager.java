@@ -98,17 +98,18 @@ public class RuimSmsInterfaceManager extends IccSmsInterfaceManager {
                 case ACCESS_TYPE_SMS_MMS:
                     if(pSetMan == null) pSetMan = new PrivacySettingsManager(null, IPrivacySettingsManager.Stub.asInterface(ServiceManager.getService("privacy")));
                     if (pSetMan == null) {
-                        Log.d(P_TAG, "SMSDispatcher:IsAllowed: privacy service field is null");
+                        Log.d(P_TAG, "RuimSmsInterfaceManager:IsAllowed: privacy service field is null");
                         return false;
                     }
                     if (packageNames == null) {
-                        Log.d(P_TAG, "SMSDispatcher:IsAllowed: packageNames is null");
+                        Log.d(P_TAG, "RuimSmsInterfaceManager:IsAllowed: packageNames is null: ALLOW");
+                        notify(accessType, null, PrivacySettings.REAL);
                         return true;
                     }
                     for(int i=0; i < packageNames.length; i++){
                         settings = pSetMan.getSettings(packageNames[i]);
                         if(settings != null && settings.getSmsSendSetting() != PrivacySettings.REAL) {
-                            notify(accessType, packageNames[i],PrivacySettings.EMPTY);
+                            notify(accessType, packageNames[i], PrivacySettings.EMPTY);
                             return false;
                         }
                         settings = null;
@@ -119,11 +120,12 @@ public class RuimSmsInterfaceManager extends IccSmsInterfaceManager {
                 case ACCESS_TYPE_ICC:
                     if(pSetMan == null) pSetMan = new PrivacySettingsManager(null, IPrivacySettingsManager.Stub.asInterface(ServiceManager.getService("privacy")));
                     if (pSetMan == null) {
-                        Log.d(P_TAG, "SMSDispatcher:IsAllowed: privacy service field is null");
+                        Log.d(P_TAG, "RuimSmsInterfaceManager:IsAllowed: privacy service field is null");
                         return false;
                     }
                     if (packageNames == null) {
-                        Log.d(P_TAG, "SMSDispatcher:IsAllowed: packageNames is null");
+                        Log.d(P_TAG, "RuimSmsInterfaceManager:IsAllowed: packageNames is null: ALLOW");
+                        notify(accessType, null, PrivacySettings.REAL);
                         return true;
                     }
                     for(int i=0; i < packageNames.length; i++){
@@ -142,12 +144,14 @@ public class RuimSmsInterfaceManager extends IccSmsInterfaceManager {
             }
         } catch (PrivacyServiceException e) {
             Log.e(P_TAG,"SMSDispatcher:IsAllowed: PrivacyServiceException occurred", e);
+            notify(accessType, null, PrivacySettings.EMPTY);
             return false;
         } catch (Exception e) {
             Log.e(P_TAG,"Got exception while checking for sms or ICC acess permission", e);
             return false;
         }
     }
+    
     
     /**
      * {@hide}
@@ -157,16 +161,20 @@ public class RuimSmsInterfaceManager extends IccSmsInterfaceManager {
      * @param accessMode PrivacySettings.REAL || PrivacySettings.CUSTOM || PrivacySettings.RANDOM || PrivacySettings.EMPTY
      */
     protected void notify(int accessType,String packageName, byte accessMode){
-    	switch(accessType){
-    		case ACCESS_TYPE_SMS_MMS:
-    			//Log.i("PrivacySmsManager","now send notify information outgoing sms");
-    			pSetMan.notification(packageName, 0, accessMode, PrivacySettings.DATA_SMS_SEND, null, null);
-    			break;
-    		case ACCESS_TYPE_ICC:
-    			//Log.i("PrivacySmsManager","now send notify information ICC ACCESS");
-    			pSetMan.notification(packageName, 0, accessMode, PrivacySettings.DATA_ICC_ACCESS, null, null);
-    			break;
-    	}
+        try {
+            switch(accessType){
+            case ACCESS_TYPE_SMS_MMS:
+                //Log.i("PrivacySmsManager","now send notify information outgoing sms");
+                pSetMan.notification(packageName, accessMode, PrivacySettings.DATA_SMS_SEND, null);
+                break;
+            case ACCESS_TYPE_ICC:
+                //Log.i("PrivacySmsManager","now send notify information ICC ACCESS");
+                pSetMan.notification(packageName, accessMode, PrivacySettings.DATA_ICC_ACCESS, null);
+                break;
+            }
+        } catch (Exception e) {
+            Log.d(P_TAG, "RuimSmsInterfaceManager:notify: Exception when sending notification", e);
+        }
     }
     
     //-------------------------------------------------------------++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-----------------------------------------------------

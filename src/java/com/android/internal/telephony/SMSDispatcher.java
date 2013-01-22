@@ -77,6 +77,7 @@ import java.util.Random;
 // BEGIN PRIVACY ADDED
 import android.os.ServiceManager;
 import android.privacy.IPrivacySettingsManager;
+import android.privacy.PrivacyServiceException;
 import android.privacy.PrivacySettings;
 import android.privacy.PrivacySettingsManager;
 // END PRIVACY ADDED
@@ -237,64 +238,59 @@ public abstract class SMSDispatcher extends Handler {
      */
     protected boolean isAllowed(String[] packageNames, int accessType){
     	try{
-    		switch(accessType){
+    	    PrivacySettings settings = null;
+    		switch (accessType){
     			case ACCESS_TYPE_SMS_MMS:
-    				PrivacySettings settings = null;
     	        	if(pSetMan == null) pSetMan = new PrivacySettingsManager(null, IPrivacySettingsManager.Stub.asInterface(ServiceManager.getService("privacy")));
-    	        	if(pSetMan != null && packageNames != null){
-    	        		for(int i=0; i < packageNames.length; i++){
-    	            		settings = pSetMan.getSettings(packageNames[i], -1);
-    	            		if(pSetMan != null && settings != null && settings.getSmsSendSetting() != PrivacySettings.REAL){
-    	            			notify(accessType, packageNames[i],PrivacySettings.EMPTY);
-    	            			
-    	            			return false;
-    	            		}
-    	            		settings = null;
-    	            	}
-    	        		notify(accessType, packageNames[0],PrivacySettings.REAL);
-    	        		
-    	        		return true;
+    	        	if (pSetMan == null) {
+    	        	    Log.d(P_TAG, "SMSDispatcher:IsAllowed: privacy service field is null");
+                        return false;
     	        	}
-    	        	else{
-    	        		if(packageNames != null && packageNames.length > 0)
-    	        			notify(accessType, packageNames[0],PrivacySettings.REAL);
-    	     
-    	        		return true;
+    	        	if (packageNames == null) {
+                        Log.d(P_TAG, "SMSDispatcher:IsAllowed: packageNames is null");
+                        return true;
     	        	}
+	        		for(int i=0; i < packageNames.length; i++){
+	            		settings = pSetMan.getSettings(packageNames[i]);
+	            		if(settings != null && settings.getSmsSendSetting() != PrivacySettings.REAL) {
+	            			notify(accessType, packageNames[i],PrivacySettings.EMPTY);
+	            			return false;
+	            		}
+	            		settings = null;
+	            	}
+	        		notify(accessType, packageNames[0],PrivacySettings.REAL);
+	        		return true;
+
     			case ACCESS_TYPE_ICC:
-    				if(pSetMan == null) pSetMan = new PrivacySettingsManager(null, IPrivacySettingsManager.Stub.asInterface(ServiceManager.getService("privacy")));
-    	        	if(pSetMan != null && packageNames != null){
-    	        		for(int i=0; i < packageNames.length; i++){
-    	            		settings = pSetMan.getSettings(packageNames[i], -1);
-    	            		if(pSetMan != null && settings != null && settings.getIccAccessSetting() != PrivacySettings.REAL){
-    	            			notify(accessType, packageNames[i],PrivacySettings.EMPTY);
-    	            			return false;
-    	            		}
-    	            		settings = null;
-    	            	}
-    	        		notify(accessType, packageNames[0],PrivacySettings.REAL);
-    	        		return true;
+                    if(pSetMan == null) pSetMan = new PrivacySettingsManager(null, IPrivacySettingsManager.Stub.asInterface(ServiceManager.getService("privacy")));
+                    if (pSetMan == null) {
+                        Log.d(P_TAG, "SMSDispatcher:IsAllowed: privacy service field is null");
+                        return false;
+                    }
+    	        	if (packageNames == null) {
+                        Log.d(P_TAG, "SMSDispatcher:IsAllowed: packageNames is null");
+                        return true;
     	        	}
-    	        	else{
-    	        		if(packageNames != null && packageNames.length > 0)
-    	        			notify(accessType, packageNames[0],PrivacySettings.REAL);
-    	        			
-    	        		return true;
-    	        	}
+	        		for(int i=0; i < packageNames.length; i++){
+	            		settings = pSetMan.getSettings(packageNames[i]);
+	            		if(settings != null && settings.getIccAccessSetting() != PrivacySettings.REAL){
+	            			notify(accessType, packageNames[i],PrivacySettings.EMPTY);
+	            			return false;
+	            		}
+	            		settings = null;
+	            	}
+	        		notify(accessType, packageNames[0],PrivacySettings.REAL);
+	        		return true;
     	        default:
     	        	notify(accessType, packageNames[0],PrivacySettings.REAL);
     	        	return true;
     		}
-    	}
-    	catch(Exception e){
-    		Log.e(P_TAG,"Got exception while checking for sms or ICC acess permission");
-    		e.printStackTrace();
-    		if(packageNames != null && pSetMan != null && packageNames.length > 0){
-    			PrivacySettings settings = pSetMan.getSettings(packageNames[0], -1);
-    			if(settings != null)
-    				notify(accessType, packageNames[0],PrivacySettings.REAL);
-    		}
-    		return true;
+    	} catch (PrivacyServiceException e) {
+    	    Log.e(P_TAG,"SMSDispatcher:IsAllowed: PrivacyServiceException occurred", e);
+    	    return false;
+    	} catch (Exception e) {
+    		Log.e(P_TAG,"Got exception while checking for sms or ICC acess permission", e);
+            return false;
     	}
     }
     

@@ -17,6 +17,7 @@ import android.os.Binder;
 import android.os.Process;
 import android.os.ServiceManager;
 import android.privacy.IPrivacySettingsManager;
+import android.privacy.PrivacyServiceException;
 import android.privacy.PrivacySettings;
 import android.privacy.PrivacySettingsManager;
 import android.telephony.CellLocation;
@@ -39,15 +40,13 @@ import com.android.internal.telephony.cdma.CDMALTEPhone;
 public class PrivacyCDMALTEPhone extends CDMALTEPhone{
 
 	private static final String P_TAG = "PrivacyCDMALTEPhone";
-	
-	private PrivacySettingsManager pSetMan;
-	
+	private PrivacySettingsManager mPrvSvc;
 	private Context context;
 	
 	public PrivacyCDMALTEPhone(Context context, CommandsInterface cmdI, PhoneNotifier pN) {
 		super(context, cmdI, pN);
 		this.context = context;
-		pSetMan = new PrivacySettingsManager(context, IPrivacySettingsManager.Stub.asInterface(ServiceManager.getService("privacy")));
+		mPrvSvc = new PrivacySettingsManager(context, IPrivacySettingsManager.Stub.asInterface(ServiceManager.getService("privacy")));
 		Log.i(P_TAG,"Constructor ready for package: " + context.getPackageName());
 	}
 	
@@ -55,16 +54,24 @@ public class PrivacyCDMALTEPhone extends CDMALTEPhone{
 	public String getMsisdn() {
 		Log.i(P_TAG,"Package: " + context.getPackageName() + " asked for getMsisdn()");
 		String packageName = context.getPackageName();
-        int uid = Binder.getCallingUid();
-        PrivacySettings pSet = pSetMan.getSettings(packageName, uid);
-        String output;
-        if (pSet != null && pSet.getDeviceIdSetting() != PrivacySettings.REAL) {
-            output = pSet.getDeviceId(); // can be empty, custom or random
-            pSetMan.notification(packageName, uid, pSet.getDeviceIdSetting(), PrivacySettings.DATA_DEVICE_ID, output, pSet);
-        } else {
-            output = super.getMsisdn();
-            pSetMan.notification(packageName, uid, PrivacySettings.REAL, PrivacySettings.DATA_DEVICE_ID, output, pSet);
-        }
+		String output;
+		try {
+		    if (mPrvSvc == null) {
+		        output = "";
+		    } else {
+		        PrivacySettings settings = mPrvSvc.getSettings(packageName);
+		        if (settings == null || settings.getDeviceIdSetting() == PrivacySettings.REAL) {
+		            output = super.getMsisdn();
+		            mPrvSvc.notification(packageName, PrivacySettings.REAL, PrivacySettings.DATA_DEVICE_ID, output);
+		        } else {
+		            output = settings.getDeviceId(); // can be empty, custom or random
+		            mPrvSvc.notification(packageName, settings.getDeviceIdSetting(), PrivacySettings.DATA_DEVICE_ID, output);
+		        }
+		    }
+		} catch (PrivacyServiceException e) {
+            output = "";
+            if (mPrvSvc != null) mPrvSvc.notification(packageName, PrivacySettings.ERROR, PrivacySettings.DATA_DEVICE_ID, output);
+		}
         return output;
 	}
 	
@@ -76,16 +83,24 @@ public class PrivacyCDMALTEPhone extends CDMALTEPhone{
 	public String getDeviceSvn() {
 		Log.i(P_TAG,"Package: " + context.getPackageName() + " asked for getDeviceSvn()");
 		String packageName = context.getPackageName();
-        int uid = Binder.getCallingUid();
-        PrivacySettings pSet = pSetMan.getSettings(packageName, uid);
-        String output;
-        if (pSet != null && pSet.getDeviceIdSetting() != PrivacySettings.REAL) {
-            output = pSet.getDeviceId(); // can be empty, custom or random
-            pSetMan.notification(packageName, uid, pSet.getDeviceIdSetting(), PrivacySettings.DATA_DEVICE_ID, output, pSet);
-        } else {
-            output = super.getDeviceSvn();
-            pSetMan.notification(packageName, uid, PrivacySettings.REAL, PrivacySettings.DATA_DEVICE_ID, output, pSet);
-        }
+		String output;
+		try {
+		    if (mPrvSvc == null) {
+		        output = "";
+		    } else {
+		        PrivacySettings settings = mPrvSvc.getSettings(packageName);
+		        if (settings == null || settings.getDeviceIdSetting() == PrivacySettings.REAL) {
+		            output = super.getDeviceSvn();
+		            mPrvSvc.notification(packageName, PrivacySettings.REAL, PrivacySettings.DATA_DEVICE_ID, output);
+		        } else {
+		            output = settings.getDeviceId(); // can be empty, custom or random
+		            mPrvSvc.notification(packageName, settings.getDeviceIdSetting(), PrivacySettings.DATA_DEVICE_ID, output);
+		        }
+		    }
+		} catch (PrivacyServiceException e) {
+            output = "";
+            mPrvSvc.notification(packageName, PrivacySettings.ERROR, PrivacySettings.DATA_DEVICE_ID, output);
+		}
         return output;
 	}
 	
@@ -93,16 +108,24 @@ public class PrivacyCDMALTEPhone extends CDMALTEPhone{
 	public String getImei() {
 		Log.i(P_TAG,"Package: " + context.getPackageName() + " asked for getImei");
 		String packageName = context.getPackageName();
-        int uid = Binder.getCallingUid();
-        PrivacySettings pSet = pSetMan.getSettings(packageName, uid);
-        String output;
-        if (pSet != null && pSet.getDeviceIdSetting() != PrivacySettings.REAL) {
-            output = pSet.getDeviceId(); // can be empty, custom or random
-            pSetMan.notification(packageName, uid, pSet.getDeviceIdSetting(), PrivacySettings.DATA_DEVICE_ID, output, pSet);
-        } else {
-            output = super.getImei();
-            pSetMan.notification(packageName, uid, PrivacySettings.REAL, PrivacySettings.DATA_DEVICE_ID, output, pSet);
-        }
+		String output;		
+		try {
+		    if (mPrvSvc == null) {
+		        output = "";
+		    } else {
+		        PrivacySettings settings = mPrvSvc.getSettings(packageName);
+		        if (settings == null || settings.getDeviceIdSetting() == PrivacySettings.REAL) {
+		            output = super.getImei();
+		            mPrvSvc.notification(packageName, PrivacySettings.REAL, PrivacySettings.DATA_DEVICE_ID, output);
+		        } else {
+		            output = settings.getDeviceId(); // can be empty, custom or random
+		            mPrvSvc.notification(packageName, settings.getDeviceIdSetting(), PrivacySettings.DATA_DEVICE_ID, output);
+		        }
+		    }
+		} catch (PrivacyServiceException e) {
+            output = "";
+            mPrvSvc.notification(packageName, PrivacySettings.ERROR, PrivacySettings.DATA_DEVICE_ID, output);
+		}
         return output;
 	}
 	
@@ -110,59 +133,86 @@ public class PrivacyCDMALTEPhone extends CDMALTEPhone{
 	public String getSubscriberId() {
 		Log.i(P_TAG,"Package: " + context.getPackageName() + " asked for getSubscriberId()");
 		String packageName = context.getPackageName();
-        int uid = Binder.getCallingUid();
-        PrivacySettings pSet = pSetMan.getSettings(packageName, uid);
-        String output;
-        if (pSet != null && pSet.getSubscriberIdSetting() != PrivacySettings.REAL) {
-            output = pSet.getSubscriberId(); // can be empty, custom or random
-            pSetMan.notification(packageName, uid, pSet.getSubscriberIdSetting(), PrivacySettings.DATA_SUBSCRIBER_ID, output, pSet);            
-        } else {
-            output = super.getSubscriberId();
-            pSetMan.notification(packageName, uid, PrivacySettings.REAL, PrivacySettings.DATA_SUBSCRIBER_ID, output, pSet);            
-        }
+		String output;
+		try {
+		    if (mPrvSvc == null) {
+		        output = "";
+		    } else {
+		        PrivacySettings settings = mPrvSvc.getSettings(packageName);
+		        if (settings == null || settings.getSubscriberIdSetting() == PrivacySettings.REAL) {
+		            output = super.getSubscriberId();
+		            mPrvSvc.notification(packageName, PrivacySettings.REAL, PrivacySettings.DATA_SUBSCRIBER_ID, output);
+		        } else {
+		            output = settings.getSubscriberId(); // can be empty, custom or random
+		            mPrvSvc.notification(packageName, settings.getSubscriberIdSetting(), PrivacySettings.DATA_SUBSCRIBER_ID, output);
+		        }
+		    }
+		} catch (PrivacyServiceException e) {
+            output = "";
+            mPrvSvc.notification(packageName, PrivacySettings.ERROR, PrivacySettings.DATA_SUBSCRIBER_ID, output);
+		}
         return output;
 	}
 	
 //	@Override
 //	public void notifyLocationChanged() {
 //		Log.i(P_TAG,"Package: " + context.getPackageName() + " asked for notifyLocationChanged()");
-//		PrivacySettings settings = pSetMan.getSettings(context.getPackageName(), Process.myUid());
-//		if(pSetMan != null && settings != null && settings.getNetworkInfoSetting() != PrivacySettings.REAL){
+//		PrivacySettings settings = mPrvSvc.getSettings(context.getPackageName(), Process.myUid());
+//		if(mPrvSvc != null && settings != null && settings.getNetworkInfoSetting() != PrivacySettings.REAL){
 //			//do nothing here
 //		}
 //		else
 //			mNotifier.notifyCellLocation(this);
 //	}
-	
+
+
 	@Override
 	public String getLine1AlphaTag() {
 		Log.i(P_TAG,"Package: " + context.getPackageName() + " asked for getLine1AlphaTag()");
-		PrivacySettings settings = pSetMan.getSettings(context.getPackageName(), Process.myUid());
-		String output = "";
-		if(pSetMan != null && settings != null && settings.getLine1NumberSetting() != PrivacySettings.REAL){
-			output = settings.getLine1Number();
-			pSetMan.notification(context.getPackageName(), 0, settings.getLine1NumberSetting(), PrivacySettings.DATA_LINE_1_NUMBER, output, settings);
-		}
-		else{
-			pSetMan.notification(context.getPackageName(), 0, PrivacySettings.REAL, PrivacySettings.DATA_LINE_1_NUMBER, output, settings);
-			output = super.getLine1AlphaTag();
+		String output;
+		
+		try {
+		    if (mPrvSvc == null) {
+		        output = "";
+		    } else {
+		        PrivacySettings settings = mPrvSvc.getSettings(context.getPackageName());
+		        if (settings == null || settings.getLine1NumberSetting() == PrivacySettings.REAL) {
+		            output = super.getLine1AlphaTag();
+    		        mPrvSvc.notification(context.getPackageName(), PrivacySettings.REAL, PrivacySettings.DATA_LINE_1_NUMBER, output);
+		        } else {
+		            output = settings.getLine1Number();
+		            mPrvSvc.notification(context.getPackageName(), settings.getLine1NumberSetting(), PrivacySettings.DATA_LINE_1_NUMBER, output);
+		        }
+		    }
+		} catch (PrivacyServiceException e) {
+            output = "";
+            mPrvSvc.notification(context.getPackageName(), PrivacySettings.ERROR, PrivacySettings.DATA_LINE_1_NUMBER, output);
 		}
 		return output;
 	}
-	
+
+
 	@Override
 	public String getVoiceMailAlphaTag() {
 		Log.i(P_TAG,"Package: " + context.getPackageName() + " asked for getVoiceMailAlphaTag()");
 		String packageName = context.getPackageName();
-        int uid = Binder.getCallingUid();
-        PrivacySettings pSet = pSetMan.getSettings(packageName, uid);
         String output;
-        if (pSet != null && pSet.getLine1NumberSetting() != PrivacySettings.REAL) {
-            output = pSet.getLine1Number(); // can be empty, custom or random
-            pSetMan.notification(packageName, uid, pSet.getLine1NumberSetting(), PrivacySettings.DATA_LINE_1_NUMBER, output, pSet);
-        } else {
-            output = super.getVoiceMailAlphaTag();
-            pSetMan.notification(packageName, uid, PrivacySettings.REAL, PrivacySettings.DATA_LINE_1_NUMBER, output, pSet);
+        try {
+            if (mPrvSvc == null) {
+                output = "";
+            } else {
+                PrivacySettings settings = mPrvSvc.getSettings(packageName);
+                if (settings == null || settings.getLine1NumberSetting() == PrivacySettings.REAL) {
+                    output = super.getVoiceMailAlphaTag();
+                    mPrvSvc.notification(packageName, PrivacySettings.REAL, PrivacySettings.DATA_LINE_1_NUMBER, output);
+                } else {
+                    output = settings.getLine1Number(); // can be empty, custom or random
+                    mPrvSvc.notification(packageName, settings.getLine1NumberSetting(), PrivacySettings.DATA_LINE_1_NUMBER, output);
+                }
+            }
+        } catch (PrivacyServiceException e) {
+            output = "";
+            mPrvSvc.notification(packageName, PrivacySettings.ERROR, PrivacySettings.DATA_LINE_1_NUMBER, output);
         }
         return output;
 	}
@@ -171,16 +221,24 @@ public class PrivacyCDMALTEPhone extends CDMALTEPhone{
 	public String getVoiceMailNumber(){
 		Log.i(P_TAG,"Package: " + context.getPackageName() + " asked for getVoiceMailNumber()");
 		String packageName = context.getPackageName();
-        int uid = Binder.getCallingUid();
-        PrivacySettings pSet = pSetMan.getSettings(packageName, uid);
-        String output;
-        if (pSet != null && pSet.getLine1NumberSetting() != PrivacySettings.REAL) {
-            output = pSet.getLine1Number(); // can be empty, custom or random
-            pSetMan.notification(packageName, uid, pSet.getLine1NumberSetting(), PrivacySettings.DATA_LINE_1_NUMBER, output, pSet);
-        } else {
-            output = super.getVoiceMailNumber();
-            pSetMan.notification(packageName, uid, PrivacySettings.REAL, PrivacySettings.DATA_LINE_1_NUMBER, output, pSet);
-        }
+		String output;
+		try {
+		    if (mPrvSvc == null) {
+		        output = null;
+		    } else {
+		        PrivacySettings settings = mPrvSvc.getSettings(packageName);
+		        if (settings == null || settings.getLine1NumberSetting() == PrivacySettings.REAL) {
+    		        output = super.getVoiceMailNumber();
+    		        mPrvSvc.notification(packageName, PrivacySettings.REAL, PrivacySettings.DATA_LINE_1_NUMBER, output);
+		        } else {
+		            output = settings.getLine1Number(); // can be empty, custom or random
+		            mPrvSvc.notification(packageName, settings.getLine1NumberSetting(), PrivacySettings.DATA_LINE_1_NUMBER, output);		            
+		        }
+		    }
+		} catch (PrivacyServiceException e) {
+            output = "";
+            mPrvSvc.notification(packageName, PrivacySettings.ERROR, PrivacySettings.DATA_LINE_1_NUMBER, output);
+		}
         return output;
 	}
 
@@ -188,15 +246,24 @@ public class PrivacyCDMALTEPhone extends CDMALTEPhone{
 	public String getDeviceId() {
 		Log.i(P_TAG,"Package: " + context.getPackageName() + " asked for getDeviceId()");
 		String packageName = context.getPackageName();
-        int uid = Binder.getCallingUid();
-        PrivacySettings pSet = pSetMan.getSettings(packageName, uid);
         String output;
-        if (pSet != null && pSet.getDeviceIdSetting() != PrivacySettings.REAL) {
-            output = pSet.getDeviceId(); // can be empty, custom or random
-            pSetMan.notification(packageName, uid, pSet.getDeviceIdSetting(), PrivacySettings.DATA_DEVICE_ID, output, pSet);
-        } else {
-            output = super.getDeviceId();
-            pSetMan.notification(packageName, uid, PrivacySettings.REAL, PrivacySettings.DATA_DEVICE_ID, output, pSet);
+        try {
+            if (mPrvSvc == null) {
+                output = "";
+            } else {
+                PrivacySettings settings = mPrvSvc.getSettings(packageName);
+                if (settings == null || settings.getDeviceIdSetting() == PrivacySettings.REAL) {
+                    output = super.getDeviceId();
+                    mPrvSvc.notification(packageName, PrivacySettings.REAL, PrivacySettings.DATA_DEVICE_ID, output);
+                } else {
+                    output = settings.getDeviceId(); // can be empty, custom or random
+                    mPrvSvc.notification(packageName, settings.getDeviceIdSetting(), PrivacySettings.DATA_DEVICE_ID, output);
+                }
+                
+            }
+        } catch (PrivacyServiceException e) {
+            output = "";
+            mPrvSvc.notification(packageName, PrivacySettings.ERROR, PrivacySettings.DATA_DEVICE_ID, output);
         }
         return output;
 	}
@@ -205,15 +272,23 @@ public class PrivacyCDMALTEPhone extends CDMALTEPhone{
 	public String getMeid() {
 		Log.i(P_TAG,"Package: " + context.getPackageName() + " asked for getMeid()");
 		String packageName = context.getPackageName();
-        int uid = Binder.getCallingUid();
-        PrivacySettings pSet = pSetMan.getSettings(packageName, uid);
         String output;
-        if (pSet != null && pSet.getDeviceIdSetting() != PrivacySettings.REAL) {
-            output = pSet.getDeviceId(); // can be empty, custom or random
-            pSetMan.notification(packageName, uid, pSet.getDeviceIdSetting(), PrivacySettings.DATA_DEVICE_ID, output, pSet);
-        } else {
-            output = super.getMeid();
-            pSetMan.notification(packageName, uid, PrivacySettings.REAL, PrivacySettings.DATA_DEVICE_ID, output, pSet);
+        try {
+            if (mPrvSvc == null) {
+                output = "";
+            } else {
+                PrivacySettings settings = mPrvSvc.getSettings(packageName);
+                if (settings == null || settings.getDeviceIdSetting() == PrivacySettings.REAL) {
+                    output = super.getMeid();
+                    mPrvSvc.notification(packageName, PrivacySettings.REAL, PrivacySettings.DATA_DEVICE_ID, output);
+                } else {
+                    output = settings.getDeviceId(); // can be empty, custom or random
+                    mPrvSvc.notification(packageName, settings.getDeviceIdSetting(), PrivacySettings.DATA_DEVICE_ID, output);                    
+                }
+            }
+        } catch (PrivacyServiceException e) {
+            output = "";
+            mPrvSvc.notification(packageName, PrivacySettings.ERROR, PrivacySettings.DATA_DEVICE_ID, output);
         }
         return output;
 	}
@@ -222,31 +297,47 @@ public class PrivacyCDMALTEPhone extends CDMALTEPhone{
 	public String getEsn() {
 		Log.i(P_TAG,"Package: " + context.getPackageName() + " asked for getEsn()");
 		String packageName = context.getPackageName();
-        int uid = Binder.getCallingUid();
-        PrivacySettings pSet = pSetMan.getSettings(packageName, uid);
-        String output;
-        if (pSet != null && pSet.getDeviceIdSetting() != PrivacySettings.REAL) {
-            output = pSet.getDeviceId(); // can be empty, custom or random
-            pSetMan.notification(packageName, uid, pSet.getDeviceIdSetting(), PrivacySettings.DATA_DEVICE_ID, output, pSet);
-        } else {
-            output = super.getEsn();
-            pSetMan.notification(packageName, uid, PrivacySettings.REAL, PrivacySettings.DATA_DEVICE_ID, output, pSet);
-        }
+		String output;
+		try {
+		    if (mPrvSvc == null) {
+		        output = "";
+		    } else {
+		        PrivacySettings settings = mPrvSvc.getSettings(packageName);
+		        if (settings == null || settings.getDeviceIdSetting() == PrivacySettings.REAL) {
+		            output = super.getEsn();
+		            mPrvSvc.notification(packageName, PrivacySettings.REAL, PrivacySettings.DATA_DEVICE_ID, output);		            
+		        } else {
+		            output = settings.getDeviceId(); // can be empty, custom or random
+		            mPrvSvc.notification(packageName, settings.getDeviceIdSetting(), PrivacySettings.DATA_DEVICE_ID, output);
+		        }
+		    }
+		} catch (PrivacyServiceException e) {
+            output = "";
+            mPrvSvc.notification(packageName, PrivacySettings.ERROR, PrivacySettings.DATA_DEVICE_ID, output);
+		}
         return output;
 	}
 	
 	@Override
 	public String getLine1Number() {
 		Log.i(P_TAG,"Package: " + context.getPackageName() + " asked for getLine1Number()");
-		PrivacySettings settings = pSetMan.getSettings(context.getPackageName(), Process.myUid());
-		String output = "";
-		if(pSetMan != null && settings != null && settings.getLine1NumberSetting() != PrivacySettings.REAL){
-			output = settings.getLine1Number();
-			pSetMan.notification(context.getPackageName(), 0, settings.getLine1NumberSetting(), PrivacySettings.DATA_LINE_1_NUMBER, output, settings);
-		}
-		else{
-			pSetMan.notification(context.getPackageName(), 0, PrivacySettings.REAL, PrivacySettings.DATA_LINE_1_NUMBER, output, settings);
-			output = super.getLine1Number();
+		String output;
+		try {
+		    if (mPrvSvc == null) {
+		        output = "";
+		    } else {
+		        PrivacySettings settings = mPrvSvc.getSettings(context.getPackageName());
+		        if (settings == null || settings.getLine1NumberSetting() == PrivacySettings.REAL) {
+		            output = super.getLine1Number();
+		            mPrvSvc.notification(context.getPackageName(), PrivacySettings.REAL, PrivacySettings.DATA_LINE_1_NUMBER, output);
+		        } else {
+		            output = settings.getLine1Number();
+		            mPrvSvc.notification(context.getPackageName(), settings.getLine1NumberSetting(), PrivacySettings.DATA_LINE_1_NUMBER, output);
+		        }
+		    }
+		} catch (PrivacyServiceException e) {
+            output = "";
+            mPrvSvc.notification(context.getPackageName(), PrivacySettings.ERROR, PrivacySettings.DATA_LINE_1_NUMBER, output);
 		}
 		return output;
 	}
@@ -254,28 +345,46 @@ public class PrivacyCDMALTEPhone extends CDMALTEPhone{
 	@Override
 	public CellLocation getCellLocation() {
 		Log.i(P_TAG,"Package: " + context.getPackageName() + " asked for getCellLocation()");
-		PrivacySettings settings = pSetMan.getSettings(context.getPackageName(), Process.myUid());
-		if(pSetMan != null && settings != null && (settings.getLocationGpsSetting() != PrivacySettings.REAL || settings.getLocationNetworkSetting() != PrivacySettings.REAL)){
-			pSetMan.notification(context.getPackageName(), 0, settings.getLocationNetworkSetting(), PrivacySettings.DATA_LOCATION_NETWORK, null, settings);
-			return new CdmaCellLocation();
-		}
-		else{
-			pSetMan.notification(context.getPackageName(), 0, PrivacySettings.REAL,PrivacySettings.DATA_LOCATION_NETWORK, null, settings);
-			return super.getCellLocation();
+		
+		try {
+		    if (mPrvSvc == null) {
+		        return new CdmaCellLocation();
+		    } else {
+		        PrivacySettings settings = mPrvSvc.getSettings(context.getPackageName());
+		        if (settings == null || (settings.getLocationNetworkSetting() == PrivacySettings.REAL && settings.getLocationGpsSetting() == PrivacySettings.REAL)) {
+		            mPrvSvc.notification(context.getPackageName(), PrivacySettings.REAL, PrivacySettings.DATA_LOCATION_NETWORK, null);
+		            return super.getCellLocation();
+		        } else {
+		            mPrvSvc.notification(context.getPackageName(), settings.getLocationNetworkSetting(), PrivacySettings.DATA_LOCATION_NETWORK, null);
+		            return new CdmaCellLocation();
+		        }
+		    }
+		} catch (PrivacyServiceException e) {
+            mPrvSvc.notification(context.getPackageName(), PrivacySettings.ERROR, PrivacySettings.DATA_LOCATION_NETWORK, null);
+            return new CdmaCellLocation();
 		}
 	}
 	
 	@Override
 	public PhoneSubInfo getPhoneSubInfo() {
 		Log.i(P_TAG,"Package: " + context.getPackageName() + " asked for getPhoneSubInfo()");
-		PrivacySettings settings = pSetMan.getSettings(context.getPackageName(), Process.myUid());
-		if(pSetMan != null && settings != null && settings.getNetworkInfoSetting() != PrivacySettings.REAL){
-			pSetMan.notification(context.getPackageName(), 0, settings.getLocationNetworkSetting(), PrivacySettings.DATA_LOCATION_NETWORK, null, settings);
-			return null;
-		}
-		else{
-			pSetMan.notification(context.getPackageName(), 0, PrivacySettings.REAL, PrivacySettings.DATA_LOCATION_NETWORK, null, settings);
-			return super.getPhoneSubInfo();
+		
+		try {
+		    if (mPrvSvc == null) {
+		        return null;
+		    } else {
+		        PrivacySettings settings = mPrvSvc.getSettings(context.getPackageName());
+		        if (settings == null || settings.getNetworkInfoSetting() == PrivacySettings.REAL) {
+		            mPrvSvc.notification(context.getPackageName(), PrivacySettings.REAL, PrivacySettings.DATA_LOCATION_NETWORK, null);
+		            return super.getPhoneSubInfo();
+		        } else {
+		            mPrvSvc.notification(context.getPackageName(), settings.getLocationNetworkSetting(), PrivacySettings.DATA_LOCATION_NETWORK, null);
+		            return null;
+		        }
+		    }
+		} catch (PrivacyServiceException e) {
+            mPrvSvc.notification(context.getPackageName(), PrivacySettings.ERROR, PrivacySettings.DATA_LOCATION_NETWORK, null);
+            return null;
 		}
 	}
 	
@@ -283,21 +392,29 @@ public class PrivacyCDMALTEPhone extends CDMALTEPhone{
 	public ServiceState getServiceState() {
 		try{
 			Log.i(P_TAG,"Package: " + context.getPackageName() + " asked for getServiceState()");
-			PrivacySettings settings = pSetMan.getSettings(context.getPackageName(), Process.myUid());
-			if(pSetMan != null && settings != null && settings.getNetworkInfoSetting() != PrivacySettings.REAL){
-				pSetMan.notification(context.getPackageName(), 0, settings.getLocationNetworkSetting(), PrivacySettings.DATA_LOCATION_NETWORK, null, settings);
-				ServiceState output = super.getServiceState();
-				output.setOperatorName("", "", "");
-				return output;
-			}
-			else{
-				pSetMan.notification(context.getPackageName(), 0, PrivacySettings.REAL, PrivacySettings.DATA_LOCATION_NETWORK, null, settings);
-				return super.getServiceState();
-			}
-		}
-		catch(Exception e){
-			e.printStackTrace();
-			Log.e(P_TAG,"We got exception in getServiceState()-> give fake state");
+		    if (mPrvSvc == null) {
+                ServiceState output = super.getServiceState();
+                output.setOperatorName("", "", "");
+                return output;
+		    } else {
+		        PrivacySettings settings = mPrvSvc.getSettings(context.getPackageName());
+		        if (settings == null || settings.getNetworkInfoSetting() == PrivacySettings.REAL) {
+		            mPrvSvc.notification(context.getPackageName(), PrivacySettings.REAL, PrivacySettings.DATA_LOCATION_NETWORK, null);
+		            return super.getServiceState();
+		        } else {
+		            mPrvSvc.notification(context.getPackageName(), settings.getLocationNetworkSetting(), PrivacySettings.DATA_LOCATION_NETWORK, null);
+		            ServiceState output = super.getServiceState();
+		            output.setOperatorName("", "", "");
+		            return output;
+		        }
+		    }
+		} catch (PrivacyServiceException e) {
+		    mPrvSvc.notification(context.getPackageName(), PrivacySettings.ERROR, PrivacySettings.DATA_LOCATION_NETWORK, null);
+            ServiceState output = super.getServiceState();
+            output.setOperatorName("", "", "");
+            return output;
+		} catch(Exception e) {
+			Log.e(P_TAG,"We got exception in getServiceState()-> give fake state", e);
 			ServiceState output = super.getServiceState();
 			output.setOperatorName("", "", "");
 			return output;
@@ -306,27 +423,43 @@ public class PrivacyCDMALTEPhone extends CDMALTEPhone{
 	
 	@Override
     public Connection dial(String dialNumber) throws CallStateException{
-		PrivacySettings settings = pSetMan.getSettings(context.getPackageName(), -1);
-		if(pSetMan != null && settings != null && settings.getPhoneCallSetting() != PrivacySettings.REAL){
-			pSetMan.notification(context.getPackageName(), 0, PrivacySettings.EMPTY, PrivacySettings.DATA_PHONE_CALL, null, null);
-			throw new CallStateException();
-		}
-		else{
-			pSetMan.notification(context.getPackageName(), 0, PrivacySettings.REAL, PrivacySettings.DATA_PHONE_CALL, null, null);
-			return super.dial(dialNumber);
-		}
+	    try {
+	        if (mPrvSvc == null) {
+	            throw new CallStateException();
+	        } else {
+	            PrivacySettings settings = mPrvSvc.getSettings(context.getPackageName());
+	            if (settings == null || settings.getPhoneCallSetting() == PrivacySettings.REAL) {
+	                mPrvSvc.notification(context.getPackageName(), PrivacySettings.REAL, PrivacySettings.DATA_PHONE_CALL, null);
+	                return super.dial(dialNumber);
+	            } else {
+	                mPrvSvc.notification(context.getPackageName(), PrivacySettings.EMPTY, PrivacySettings.DATA_PHONE_CALL, null);
+	                throw new CallStateException();
+	            }
+	        }
+	    } catch (PrivacyServiceException e) {
+            mPrvSvc.notification(context.getPackageName(), PrivacySettings.ERROR, PrivacySettings.DATA_PHONE_CALL, null);
+            throw new CallStateException();
+	    }
     }
 	
 	@Override
     public Connection dial (String dialNumber, UUSInfo uusInfo) throws CallStateException{
-		PrivacySettings settings = pSetMan.getSettings(context.getPackageName(), -1);
-		if(pSetMan != null && settings != null && settings.getPhoneCallSetting() != PrivacySettings.REAL){
-			pSetMan.notification(context.getPackageName(), 0, PrivacySettings.EMPTY, PrivacySettings.DATA_PHONE_CALL, null, null);
-			throw new CallStateException();
-		}
-		else{
-			pSetMan.notification(context.getPackageName(), 0, PrivacySettings.REAL, PrivacySettings.DATA_PHONE_CALL, null, null);
-			return super.dial(dialNumber, uusInfo);
-		}
+	    try {
+	        if (mPrvSvc == null) {
+	            throw new CallStateException();
+	        } else {
+	            PrivacySettings settings = mPrvSvc.getSettings(context.getPackageName());
+	            if (settings == null || settings.getPhoneCallSetting() == PrivacySettings.REAL) {
+	                mPrvSvc.notification(context.getPackageName(), PrivacySettings.REAL, PrivacySettings.DATA_PHONE_CALL, null);
+	                return super.dial(dialNumber, uusInfo);
+	            } else {
+	                mPrvSvc.notification(context.getPackageName(), PrivacySettings.EMPTY, PrivacySettings.DATA_PHONE_CALL, null);
+	                throw new CallStateException();
+	            }
+	        }
+	    } catch (PrivacyServiceException e) {
+            mPrvSvc.notification(context.getPackageName(), PrivacySettings.ERROR, PrivacySettings.DATA_PHONE_CALL, null);
+            throw new CallStateException();
+	    }
 	}
 }

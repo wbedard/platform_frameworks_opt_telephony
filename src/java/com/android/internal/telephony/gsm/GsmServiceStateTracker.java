@@ -81,6 +81,7 @@ import java.util.TimeZone;
 //////////////////////////////////////////////////////////
 import android.os.ServiceManager;
 import android.privacy.IPrivacySettingsManager;
+import android.privacy.PrivacyServiceException;
 import android.privacy.PrivacySettings;
 import android.privacy.PrivacySettingsManager;
 import java.util.Random;
@@ -362,21 +363,28 @@ final class GsmServiceStateTracker extends ServiceStateTracker {
                         }
                     }
                     //---------------------------------------------------------------------------------------------------------------------
-                    PrivacySettings settings = pSetMan.getSettings(mContext.getPackageName(), 0);
-                    if(pSetMan != null && settings != null && settings.getLocationNetworkSetting() == PrivacySettings.EMPTY){
-                    	//we will update with invalid cell location values
-                    	cellLoc.setStateInvalid();
-                    	phone.notifyLocationChanged();
+                    if (pSetMan == null) {
+                        Log.e(LOG_TAG, "GsmServiceStateTracker:handleMessage:privacy service field was null");
+                        cellLoc.setStateInvalid();
+                    } else {
+                        try {
+                            PrivacySettings settings = pSetMan.getSettings(mContext.getPackageName());
+                            if (settings == null | settings.getLocationNetworkSetting() == PrivacySettings.REAL) {
+                                cellLoc.setLacAndCid(lac, cid);
+                            } else if (settings.getLocationNetworkSetting() == PrivacySettings.RANDOM) {
+                                Random values = new Random();
+                                cellLoc.setLacAndCid(values.nextInt(), values.nextInt());
+                            } else {
+                                //we will update with invalid cell location values
+                                cellLoc.setStateInvalid();
+                            }
+                        } catch (PrivacyServiceException e) {
+                            //we will update with invalid cell location values
+                            cellLoc.setStateInvalid();
+                            Log.e(LOG_TAG, "GsmServiceStateTracker:handleMessage: PrivacyServiceException occurred");
+                        }
                     }
-                    else if(pSetMan != null && settings != null && settings.getLocationNetworkSetting() == PrivacySettings.RANDOM){
-                    	Random values = new Random();
-                    	cellLoc.setLacAndCid(values.nextInt(), values.nextInt());
-                        phone.notifyLocationChanged();
-                    }
-                    else{
-                    	cellLoc.setLacAndCid(lac, cid);
-                        phone.notifyLocationChanged();
-                    }
+                    phone.notifyLocationChanged();
                     //---------------------------------------------------------------------------------------------------------------------
                     
                 }
@@ -639,7 +647,6 @@ final class GsmServiceStateTracker extends ServiceStateTracker {
                         ar.exception);
             }
         } else try {
-        	PrivacySettings settings = pSetMan.getSettings(mContext.getPackageName(), 0);
             switch (what) {
                 case EVENT_POLL_STATE_REGISTRATION:
                     states = (String[])ar.result;
@@ -680,20 +687,27 @@ final class GsmServiceStateTracker extends ServiceStateTracker {
 
                     // LAC and CID are -1 if not avail
                     //--------------------------------------------------------------------------------------------------------------------------------
-                    if(pSetMan != null && settings != null && settings.getLocationNetworkSetting() == PrivacySettings.EMPTY){
-                    	//we will update with invalid cell location values
-                    	newCellLoc.setStateInvalid();
-                        newCellLoc.setPsc(psc);
+                    if (pSetMan == null) {
+                        Log.e(LOG_TAG, "GsmServiceStateTracker:handleMessage:privacy service field was null");
+                        newCellLoc.setStateInvalid();
+                    } else {
+                        try {
+                            PrivacySettings settings = pSetMan.getSettings(mContext.getPackageName());
+                            if (settings == null || settings.getLocationNetworkSetting() == PrivacySettings.REAL) {
+                                newCellLoc.setLacAndCid(lac, cid);
+                            } else if (settings.getLocationNetworkSetting() == PrivacySettings.RANDOM) {
+                                Random values = new Random();
+                                newCellLoc.setLacAndCid(values.nextInt(), values.nextInt());
+                            } else {
+                                //we will update with invalid cell location values
+                                newCellLoc.setStateInvalid();
+                            }
+                        } catch (PrivacyServiceException e) {
+                            Log.e(LOG_TAG, "GsmServiceStateTracker:handleMessage:PrivacyServiceException occurred");
+                            newCellLoc.setStateInvalid();
+                        }
                     }
-                    else if(pSetMan != null && settings != null && settings.getLocationNetworkSetting() == PrivacySettings.RANDOM){
-                    	Random values = new Random();
-                    	newCellLoc.setLacAndCid(values.nextInt(), values.nextInt());
-                        newCellLoc.setPsc(psc);
-                    }
-                    else{
-                    	newCellLoc.setLacAndCid(lac, cid);
-                        newCellLoc.setPsc(psc);
-                    }
+                    newCellLoc.setPsc(psc);
                     //--------------------------------------------------------------------------------------------------------------------------------
                     
                 break;

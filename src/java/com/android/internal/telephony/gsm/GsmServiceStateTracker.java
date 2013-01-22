@@ -748,11 +748,22 @@ final class GsmServiceStateTracker extends ServiceStateTracker {
 
                     if (opNames != null && opNames.length >= 3) {
                     	//--------------------------------------------------------------------------------------------------------------------------------
-                        if(pSetMan != null && settings != null && settings.getNetworkInfoSetting() != PrivacySettings.REAL){
-                        	newSS.setOperatorName ("", "", "");
-                        }
-                        else{
-                        	newSS.setOperatorName (opNames[0], opNames[1], opNames[2]);
+                        // **SM: notifications?
+                        if (pSetMan == null) {
+                            Log.e(LOG_TAG, "GsmServiceStateTracker:handleMessage:privacy service field was null");
+                            newSS.setOperatorName ("", "", "");
+                        } else {
+                            try {
+                                PrivacySettings settings = pSetMan.getSettings(mContext.getPackageName());
+                                if (settings == null || settings.getNetworkInfoSetting() == PrivacySettings.REAL) {
+                                    newSS.setOperatorName (opNames[0], opNames[1], opNames[2]);
+                                } else {
+                                    newSS.setOperatorName ("", "", "");
+                                }
+                            } catch (PrivacyServiceException e) {
+                                Log.e(LOG_TAG, "GsmServiceStateTracker:handleMessage:PrivacyServiceException occurred");
+                                newSS.setOperatorName ("", "", "");
+                            }
                         }
                         //--------------------------------------------------------------------------------------------------------------------------------
                     }

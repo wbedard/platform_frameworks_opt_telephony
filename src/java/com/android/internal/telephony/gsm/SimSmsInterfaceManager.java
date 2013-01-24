@@ -107,11 +107,7 @@ public class SimSmsInterfaceManager extends IccSmsInterfaceManager {
             PrivacySettings settings = null;
             switch (accessType){
                 case ACCESS_TYPE_SMS_MMS:
-                    if(pSetMan == null) pSetMan = new PrivacySettingsManager(null, IPrivacySettingsManager.Stub.asInterface(ServiceManager.getService("privacy")));
-                    if (pSetMan == null) {
-                        Log.d(P_TAG, "SMSDispatcher:IsAllowed: privacy service field is null");
-                        return false;
-                    }
+                    if (pSetMan == null) pSetMan = PrivacySettingsManager.getPrivacyService();
                     if (packageNames == null) {
                         Log.d(P_TAG, "SMSDispatcher:IsAllowed: packageNames is null: ALLOW");
                         notify(accessType, null, PrivacySettings.REAL);
@@ -129,11 +125,7 @@ public class SimSmsInterfaceManager extends IccSmsInterfaceManager {
                     return true;
 
                 case ACCESS_TYPE_ICC:
-                    if(pSetMan == null) pSetMan = new PrivacySettingsManager(null, IPrivacySettingsManager.Stub.asInterface(ServiceManager.getService("privacy")));
-                    if (pSetMan == null) {
-                        Log.d(P_TAG, "SMSDispatcher:IsAllowed: privacy service field is null");
-                        return false;
-                    }
+                    if (pSetMan == null) pSetMan = PrivacySettingsManager.getPrivacyService();
                     if (packageNames == null) {
                         Log.d(P_TAG, "SMSDispatcher:IsAllowed: packageNames is null: ALLOW");
                         notify(accessType, null, PrivacySettings.REAL);

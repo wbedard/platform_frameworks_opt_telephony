@@ -46,7 +46,7 @@ public class PrivacyGSMPhone extends GSMPhone{
 	public PrivacyGSMPhone(Context context, CommandsInterface cmdI, PhoneNotifier pN) {
 		super(context, cmdI, pN);
 		this.context = context;
-		mPrvSvc = new PrivacySettingsManager(context, IPrivacySettingsManager.Stub.asInterface(ServiceManager.getService("privacy")));
+        mPrvSvc = PrivacySettingsManager.getPrivacyService();
 		Log.i(P_TAG,"Constructor ready for package: " + context.getPackageName());
 	}
 	
@@ -57,10 +57,7 @@ public class PrivacyGSMPhone extends GSMPhone{
 		String packageName = context.getPackageName();
 		String output;
 		try {
-		    if (mPrvSvc == null) {
-                Log.e(P_TAG,"PrivacyGSMPhone:getDeviceSvn: privacy service field is null: " + context.getPackageName());
-		        output = "";
-		    } else {
+		    if (mPrvSvc == null) mPrvSvc = PrivacySettingsManager.getPrivacyService();
 		        PrivacySettings settings = mPrvSvc.getSettings(packageName);
 		        if (settings == null || settings.getDeviceIdSetting() == PrivacySettings.REAL) {
 		            output = super.getDeviceSvn();
@@ -69,7 +66,6 @@ public class PrivacyGSMPhone extends GSMPhone{
 		            output = settings.getDeviceId(); // can be empty, custom or random
 		            mPrvSvc.notification(packageName, settings.getDeviceIdSetting(), PrivacySettings.DATA_DEVICE_ID, output);
 		        }
-		    }
 		} catch (PrivacyServiceException e) {
 		    Log.e(P_TAG,"PrivacyGSMPhone:getDeviceSvn: PrivacyServiceException occurred: " + context.getPackageName(), e);
             output = "";
@@ -84,10 +80,7 @@ public class PrivacyGSMPhone extends GSMPhone{
 		String packageName = context.getPackageName();
 		String output;		
 		try {
-		    if (mPrvSvc == null) {
-		        Log.e(P_TAG,"PrivacyGSMPhone:getImei: privacy service field is null: " + context.getPackageName());
-		        output = "";
-		    } else {
+		    if (mPrvSvc == null) mPrvSvc = PrivacySettingsManager.getPrivacyService();
 		        PrivacySettings settings = mPrvSvc.getSettings(packageName);
 		        if (settings == null || settings.getDeviceIdSetting() == PrivacySettings.REAL) {
 		            output = super.getImei();
@@ -96,7 +89,6 @@ public class PrivacyGSMPhone extends GSMPhone{
 		            output = settings.getDeviceId(); // can be empty, custom or random
 		            mPrvSvc.notification(packageName, settings.getDeviceIdSetting(), PrivacySettings.DATA_DEVICE_ID, output);
 		        }
-		    }
 		} catch (PrivacyServiceException e) {
 		    Log.e(P_TAG,"PrivacyGSMPhone:getImei: PrivacyServiceException occurred: " + context.getPackageName(), e);
             output = "";
@@ -111,10 +103,7 @@ public class PrivacyGSMPhone extends GSMPhone{
 		String packageName = context.getPackageName();
 		String output;
 		try {
-		    if (mPrvSvc == null) {
-		        Log.e(P_TAG,"PrivacyGSMPhone:getSubscriberId: privacy service field is null: " + context.getPackageName());
-		        output = "";
-		    } else {
+		    if (mPrvSvc == null) mPrvSvc = PrivacySettingsManager.getPrivacyService();
 		        PrivacySettings settings = mPrvSvc.getSettings(packageName);
 		        if (settings == null || settings.getSubscriberIdSetting() == PrivacySettings.REAL) {
 		            output = super.getSubscriberId();
@@ -123,7 +112,6 @@ public class PrivacyGSMPhone extends GSMPhone{
 		            output = settings.getSubscriberId(); // can be empty, custom or random
 		            mPrvSvc.notification(packageName, settings.getSubscriberIdSetting(), PrivacySettings.DATA_SUBSCRIBER_ID, output);
 		        }
-		    }
 		} catch (PrivacyServiceException e) {
 		    Log.e(P_TAG,"PrivacyGSMPhone:getSubscriberId: PrivacyServiceException occurred: " + context.getPackageName(), e);
             output = "";
@@ -150,10 +138,7 @@ public class PrivacyGSMPhone extends GSMPhone{
 		String output;
 		
 		try {
-		    if (mPrvSvc == null) {
-		        Log.e(P_TAG,"PrivacyGSMPhone:getLine1AlphaTag: privacy service field is null: " + context.getPackageName());
-		        output = "";
-		    } else {
+		    if (mPrvSvc == null) mPrvSvc = PrivacySettingsManager.getPrivacyService();
 		        PrivacySettings settings = mPrvSvc.getSettings(context.getPackageName());
 		        if (settings == null || settings.getLine1NumberSetting() == PrivacySettings.REAL) {
 		            output = super.getLine1AlphaTag();
@@ -162,7 +147,6 @@ public class PrivacyGSMPhone extends GSMPhone{
 		            output = settings.getLine1Number();
 		            mPrvSvc.notification(context.getPackageName(), settings.getLine1NumberSetting(), PrivacySettings.DATA_LINE_1_NUMBER, output);
 		        }
-		    }
 		} catch (PrivacyServiceException e) {
 		    Log.e(P_TAG,"PrivacyGSMPhone:getLine1AlphaTag: PrivacyServiceException occurred: " + context.getPackageName(), e);
             output = "";
@@ -178,10 +162,7 @@ public class PrivacyGSMPhone extends GSMPhone{
 		String packageName = context.getPackageName();
         String output;
         try {
-            if (mPrvSvc == null) {
-                Log.e(P_TAG,"PrivacyGSMPhone:getVoiceMailAlphaTag: privacy service field is null: " + context.getPackageName());
-                output = "";
-            } else {
+            if (mPrvSvc == null) mPrvSvc = PrivacySettingsManager.getPrivacyService();
                 PrivacySettings settings = mPrvSvc.getSettings(packageName);
                 if (settings == null || settings.getLine1NumberSetting() == PrivacySettings.REAL) {
                     output = super.getVoiceMailAlphaTag();
@@ -190,7 +171,6 @@ public class PrivacyGSMPhone extends GSMPhone{
                     output = settings.getLine1Number(); // can be empty, custom or random
                     mPrvSvc.notification(packageName, settings.getLine1NumberSetting(), PrivacySettings.DATA_LINE_1_NUMBER, output);
                 }
-            }
         } catch (PrivacyServiceException e) {
             Log.e(P_TAG,"PrivacyGSMPhone:getVoiceMailAlphaTag: PrivacyServiceException occurred: " + context.getPackageName(), e);
             output = "";
@@ -205,10 +185,7 @@ public class PrivacyGSMPhone extends GSMPhone{
 		String packageName = context.getPackageName();
 		String output;
 		try {
-		    if (mPrvSvc == null) {
-		        Log.e(P_TAG,"PrivacyGSMPhone:getVoiceMailNumber: privacy service field is null: " + context.getPackageName());
-		        output = null;
-		    } else {
+		    if (mPrvSvc == null) mPrvSvc = PrivacySettingsManager.getPrivacyService();
 		        PrivacySettings settings = mPrvSvc.getSettings(packageName);
 		        if (settings == null || settings.getLine1NumberSetting() == PrivacySettings.REAL) {
     		        output = super.getVoiceMailNumber();
@@ -217,7 +194,6 @@ public class PrivacyGSMPhone extends GSMPhone{
 		            output = settings.getLine1Number(); // can be empty, custom or random
 		            mPrvSvc.notification(packageName, settings.getLine1NumberSetting(), PrivacySettings.DATA_LINE_1_NUMBER, output);		            
 		        }
-		    }
 		} catch (PrivacyServiceException e) {
 		    Log.e(P_TAG,"PrivacyGSMPhone:getVoiceMailNumber: PrivacyServiceException occurred: " + context.getPackageName(), e);
             output = "";
@@ -232,10 +208,7 @@ public class PrivacyGSMPhone extends GSMPhone{
 		String packageName = context.getPackageName();
         String output;
         try {
-            if (mPrvSvc == null) {
-                Log.e(P_TAG,"PrivacyGSMPhone:getDeviceId: privacy service field is null: " + context.getPackageName());
-                output = "";
-            } else {
+            if (mPrvSvc == null) mPrvSvc = PrivacySettingsManager.getPrivacyService();
                 PrivacySettings settings = mPrvSvc.getSettings(packageName);
                 if (settings == null || settings.getDeviceIdSetting() == PrivacySettings.REAL) {
                     output = super.getDeviceId();
@@ -244,8 +217,6 @@ public class PrivacyGSMPhone extends GSMPhone{
                     output = settings.getDeviceId(); // can be empty, custom or random
                     mPrvSvc.notification(packageName, settings.getDeviceIdSetting(), PrivacySettings.DATA_DEVICE_ID, output);
                 }
-                
-            }
         } catch (PrivacyServiceException e) {
             Log.e(P_TAG,"PrivacyGSMPhone:getDeviceId: PrivacyServiceException occurred: " + context.getPackageName(), e);
             output = "";
@@ -260,10 +231,7 @@ public class PrivacyGSMPhone extends GSMPhone{
 		String packageName = context.getPackageName();
         String output;
         try {
-            if (mPrvSvc == null) {
-                Log.e(P_TAG,"PrivacyGSMPhone:getMeid: privacy service field is null: " + context.getPackageName());
-                output = "";
-            } else {
+            if (mPrvSvc == null) mPrvSvc = PrivacySettingsManager.getPrivacyService();
                 PrivacySettings settings = mPrvSvc.getSettings(packageName);
                 if (settings == null || settings.getDeviceIdSetting() == PrivacySettings.REAL) {
                     output = super.getMeid();
@@ -272,7 +240,6 @@ public class PrivacyGSMPhone extends GSMPhone{
                     output = settings.getDeviceId(); // can be empty, custom or random
                     mPrvSvc.notification(packageName, settings.getDeviceIdSetting(), PrivacySettings.DATA_DEVICE_ID, output);                    
                 }
-            }
         } catch (PrivacyServiceException e) {
             Log.e(P_TAG,"PrivacyGSMPhone:getMeid: PrivacyServiceException occurred: " + context.getPackageName(), e);
             output = "";
@@ -287,10 +254,7 @@ public class PrivacyGSMPhone extends GSMPhone{
 		String packageName = context.getPackageName();
 		String output;
 		try {
-		    if (mPrvSvc == null) {
-		        Log.e(P_TAG,"PrivacyGSMPhone:getEsn: privacy service field is null: " + context.getPackageName());
-		        output = "";
-		    } else {
+		    if (mPrvSvc == null) mPrvSvc = PrivacySettingsManager.getPrivacyService();
 		        PrivacySettings settings = mPrvSvc.getSettings(packageName);
 		        if (settings == null || settings.getDeviceIdSetting() == PrivacySettings.REAL) {
 		            output = super.getEsn();
@@ -299,7 +263,6 @@ public class PrivacyGSMPhone extends GSMPhone{
 		            output = settings.getDeviceId(); // can be empty, custom or random
 		            mPrvSvc.notification(packageName, settings.getDeviceIdSetting(), PrivacySettings.DATA_DEVICE_ID, output);
 		        }
-		    }
 		} catch (PrivacyServiceException e) {
 		    Log.e(P_TAG,"PrivacyGSMPhone:getEsn: PrivacyServiceException occurred: " + context.getPackageName(), e);
             output = "";
@@ -313,10 +276,7 @@ public class PrivacyGSMPhone extends GSMPhone{
 		Log.i(P_TAG,"Package: " + context.getPackageName() + " asked for getLine1Number()");
 		String output;
 		try {
-		    if (mPrvSvc == null) {
-		        Log.e(P_TAG,"PrivacyGSMPhone:getLine1Number: privacy service field is null: " + context.getPackageName());
-		        output = "";
-		    } else {
+		    if (mPrvSvc == null) mPrvSvc = PrivacySettingsManager.getPrivacyService();
 		        PrivacySettings settings = mPrvSvc.getSettings(context.getPackageName());
 		        if (settings == null || settings.getLine1NumberSetting() == PrivacySettings.REAL) {
 		            output = super.getLine1Number();
@@ -325,7 +285,6 @@ public class PrivacyGSMPhone extends GSMPhone{
 		            output = settings.getLine1Number();
 		            mPrvSvc.notification(context.getPackageName(), settings.getLine1NumberSetting(), PrivacySettings.DATA_LINE_1_NUMBER, output);
 		        }
-		    }
 		} catch (PrivacyServiceException e) {
 		    Log.e(P_TAG,"PrivacyGSMPhone:getLine1Number: PrivacyServiceException occurred: " + context.getPackageName(), e);
             output = "";
@@ -339,18 +298,14 @@ public class PrivacyGSMPhone extends GSMPhone{
 		Log.i(P_TAG,"Package: " + context.getPackageName() + " asked for getCellLocation()");
 		
 		try {
-		    if (mPrvSvc == null) {
-		        Log.e(P_TAG,"PrivacyGSMPhone:getCellLocation: privacy service field is null: " + context.getPackageName());
-		        return new GsmCellLocation();
-		    } else {
+		    if (mPrvSvc == null) mPrvSvc = PrivacySettingsManager.getPrivacyService();
 		        PrivacySettings settings = mPrvSvc.getSettings(context.getPackageName());
 		        if (settings == null || (settings.getLocationNetworkSetting() == PrivacySettings.REAL && settings.getLocationGpsSetting() == PrivacySettings.REAL)) {
 		            mPrvSvc.notification(context.getPackageName(), PrivacySettings.REAL, PrivacySettings.DATA_LOCATION_NETWORK, null);
 		            return super.getCellLocation();
 		        } else {
 		            mPrvSvc.notification(context.getPackageName(), settings.getLocationNetworkSetting(), PrivacySettings.DATA_LOCATION_NETWORK, null);
-		            return new GsmCellLocation();
-		        }
+	            return new GsmCellLocation();
 		    }
 		} catch (PrivacyServiceException e) {
 		    Log.e(P_TAG,"PrivacyGSMPhone:getCellLocation: PrivacyServiceException occurred: " + context.getPackageName(), e);
@@ -364,10 +319,7 @@ public class PrivacyGSMPhone extends GSMPhone{
 		Log.i(P_TAG,"Package: " + context.getPackageName() + " asked for getPhoneSubInfo()");
 		
 		try {
-		    if (mPrvSvc == null) {
-		        Log.e(P_TAG,"PrivacyGSMPhone:getPhoneSubInfo: privacy service field is null: " + context.getPackageName());
-		        return null;
-		    } else {
+		    if (mPrvSvc == null) mPrvSvc = PrivacySettingsManager.getPrivacyService();
 		        PrivacySettings settings = mPrvSvc.getSettings(context.getPackageName());
 		        if (settings == null || settings.getNetworkInfoSetting() == PrivacySettings.REAL) {
 		            mPrvSvc.notification(context.getPackageName(), PrivacySettings.REAL, PrivacySettings.DATA_LOCATION_NETWORK, null);
@@ -376,7 +328,6 @@ public class PrivacyGSMPhone extends GSMPhone{
 		            mPrvSvc.notification(context.getPackageName(), settings.getLocationNetworkSetting(), PrivacySettings.DATA_LOCATION_NETWORK, null);
 		            return null;
 		        }
-		    }
 		} catch (PrivacyServiceException e) {
 		    Log.e(P_TAG,"PrivacyGSMPhone:getPhoneSubInfo: PrivacyServiceException occurred: " + context.getPackageName(), e);
             mPrvSvc.notification(context.getPackageName(), PrivacySettings.ERROR, PrivacySettings.DATA_LOCATION_NETWORK, null);
@@ -385,26 +336,20 @@ public class PrivacyGSMPhone extends GSMPhone{
 	}
 	
 	@Override
-	public ServiceState getServiceState() {
+	public ServiceState getServiceState() {    
 		try{
-			Log.i(P_TAG,"Package: " + context.getPackageName() + " asked for getServiceState()");
-		    if (mPrvSvc == null) {
-		        Log.e(P_TAG,"PrivacyGSMPhone:getServiceState: privacy service field is null: " + context.getPackageName());
-                ServiceState output = super.getServiceState();
-                output.setOperatorName("", "", "");
-                return output;
-		    } else {
-		        PrivacySettings settings = mPrvSvc.getSettings(context.getPackageName());
-		        if (settings == null || settings.getNetworkInfoSetting() == PrivacySettings.REAL) {
-		            mPrvSvc.notification(context.getPackageName(), PrivacySettings.REAL, PrivacySettings.DATA_LOCATION_NETWORK, null);
-		            return super.getServiceState();
-		        } else {
-		            mPrvSvc.notification(context.getPackageName(), settings.getLocationNetworkSetting(), PrivacySettings.DATA_LOCATION_NETWORK, null);
-		            ServiceState output = super.getServiceState();
-		            output.setOperatorName("", "", "");
-		            return output;
-		        }
-		    }
+    			Log.i(P_TAG,"Package: " + context.getPackageName() + " asked for getServiceState()");
+			if (mPrvSvc == null) mPrvSvc = PrivacySettingsManager.getPrivacyService();
+    		        PrivacySettings settings = mPrvSvc.getSettings(context.getPackageName());
+    		        if (settings == null || settings.getNetworkInfoSetting() == PrivacySettings.REAL) {
+    		            mPrvSvc.notification(context.getPackageName(), PrivacySettings.REAL, PrivacySettings.DATA_LOCATION_NETWORK, null);
+    		            return super.getServiceState();
+    		        } else {
+    		            mPrvSvc.notification(context.getPackageName(), settings.getLocationNetworkSetting(), PrivacySettings.DATA_LOCATION_NETWORK, null);
+    		            ServiceState output = super.getServiceState();
+    		            output.setOperatorName("", "", "");
+    		            return output;
+    		        }
 		} catch (PrivacyServiceException e) {
 		    Log.e(P_TAG,"PrivacyGSMPhone:getServiceState: PrivacyServiceException occurred: " + context.getPackageName(), e);
 		    mPrvSvc.notification(context.getPackageName(), PrivacySettings.ERROR, PrivacySettings.DATA_LOCATION_NETWORK, null);
@@ -422,10 +367,7 @@ public class PrivacyGSMPhone extends GSMPhone{
 	@Override
     public Connection dial(String dialNumber) throws CallStateException{
 	    try {
-	        if (mPrvSvc == null) {
-	            Log.e(P_TAG,"PrivacyGSMPhone:dial: privacy service field is null: " + context.getPackageName());
-	            throw new CallStateException();
-	        } else {
+	        if (mPrvSvc == null) mPrvSvc = PrivacySettingsManager.getPrivacyService();
 	            PrivacySettings settings = mPrvSvc.getSettings(context.getPackageName());
 	            if (settings == null || settings.getPhoneCallSetting() == PrivacySettings.REAL) {
 	                mPrvSvc.notification(context.getPackageName(), PrivacySettings.REAL, PrivacySettings.DATA_PHONE_CALL, null);
@@ -434,7 +376,6 @@ public class PrivacyGSMPhone extends GSMPhone{
 	                mPrvSvc.notification(context.getPackageName(), PrivacySettings.EMPTY, PrivacySettings.DATA_PHONE_CALL, null);
 	                throw new CallStateException();
 	            }
-	        }
 	    } catch (PrivacyServiceException e) {
 	        Log.e(P_TAG,"PrivacyGSMPhone:dial: PrivacyServiceException occurred: " + context.getPackageName(), e);
             mPrvSvc.notification(context.getPackageName(), PrivacySettings.ERROR, PrivacySettings.DATA_PHONE_CALL, null);
@@ -445,10 +386,7 @@ public class PrivacyGSMPhone extends GSMPhone{
 	@Override
     public Connection dial (String dialNumber, UUSInfo uusInfo) throws CallStateException{
 	    try {
-	        if (mPrvSvc == null) {
-	            Log.e(P_TAG,"PrivacyGSMPhone:dial: privacy service field is null: " + context.getPackageName());
-	            throw new CallStateException();
-	        } else {
+	        if (mPrvSvc == null) mPrvSvc = PrivacySettingsManager.getPrivacyService();
 	            PrivacySettings settings = mPrvSvc.getSettings(context.getPackageName());
 	            if (settings == null || settings.getPhoneCallSetting() == PrivacySettings.REAL) {
 	                mPrvSvc.notification(context.getPackageName(), PrivacySettings.REAL, PrivacySettings.DATA_PHONE_CALL, null);
@@ -457,7 +395,6 @@ public class PrivacyGSMPhone extends GSMPhone{
 	                mPrvSvc.notification(context.getPackageName(), PrivacySettings.EMPTY, PrivacySettings.DATA_PHONE_CALL, null);
 	                throw new CallStateException();
 	            }
-	        }
 	    } catch (PrivacyServiceException e) {
 	        Log.e(P_TAG,"PrivacyGSMPhone:dial: PrivacyServiceException occurred: " + context.getPackageName(), e);
             mPrvSvc.notification(context.getPackageName(), PrivacySettings.ERROR, PrivacySettings.DATA_PHONE_CALL, null);

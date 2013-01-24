@@ -46,7 +46,7 @@ public class PrivacyCDMAPhone extends CDMAPhone{
 	public PrivacyCDMAPhone(Context context, CommandsInterface cmdI, PhoneNotifier pN) {
 		super(context, cmdI, pN);
 		this.context = context;
-		mPrvSvc = new PrivacySettingsManager(context, IPrivacySettingsManager.Stub.asInterface(ServiceManager.getService("privacy")));
+        mPrvSvc = PrivacySettingsManager.getPrivacyService();
 		Log.i(P_TAG,"Constructor ready for package: " + context.getPackageName());
 	}
 	
@@ -57,9 +57,7 @@ public class PrivacyCDMAPhone extends CDMAPhone{
 		String packageName = context.getPackageName();
 		String output;
 		try {
-		    if (mPrvSvc == null) {
-		        output = "";
-		    } else {
+		    if (mPrvSvc == null) mPrvSvc = PrivacySettingsManager.getPrivacyService();
 		        PrivacySettings settings = mPrvSvc.getSettings(packageName);
 		        if (settings == null || settings.getDeviceIdSetting() == PrivacySettings.REAL) {
 		            output = super.getDeviceSvn();
@@ -68,7 +66,6 @@ public class PrivacyCDMAPhone extends CDMAPhone{
 		            output = settings.getDeviceId(); // can be empty, custom or random
 		            mPrvSvc.notification(packageName, settings.getDeviceIdSetting(), PrivacySettings.DATA_DEVICE_ID, output);
 		        }
-		    }
 		} catch (PrivacyServiceException e) {
             output = "";
             mPrvSvc.notification(packageName, PrivacySettings.ERROR, PrivacySettings.DATA_DEVICE_ID, output);
@@ -82,10 +79,7 @@ public class PrivacyCDMAPhone extends CDMAPhone{
 		String packageName = context.getPackageName();
 		String output;		
 		try {
-		    if (mPrvSvc == null) {
-		        Log.e(P_TAG,"PrivacyCDMAPhone:getImei: privacy service field is null: " + context.getPackageName());
-		        output = "";
-		    } else {
+		    if (mPrvSvc == null) mPrvSvc = PrivacySettingsManager.getPrivacyService();
 		        PrivacySettings settings = mPrvSvc.getSettings(packageName);
 		        if (settings == null || settings.getDeviceIdSetting() == PrivacySettings.REAL) {
 		            output = super.getImei();
@@ -94,7 +88,6 @@ public class PrivacyCDMAPhone extends CDMAPhone{
 		            output = settings.getDeviceId(); // can be empty, custom or random
 		            mPrvSvc.notification(packageName, settings.getDeviceIdSetting(), PrivacySettings.DATA_DEVICE_ID, output);
 		        }
-		    }
 		} catch (PrivacyServiceException e) {
 		    Log.e(P_TAG,"PrivacyCDMAPhone:getImei: PrivacyServiceException occurred: " + context.getPackageName(), e);
             output = "";
@@ -109,10 +102,7 @@ public class PrivacyCDMAPhone extends CDMAPhone{
 		String packageName = context.getPackageName();
 		String output;
 		try {
-		    if (mPrvSvc == null) {
-		        Log.e(P_TAG,"PrivacyCDMAPhone:getSubscriberId: privacy service field is null: " + context.getPackageName());
-		        output = "";
-		    } else {
+		    if (mPrvSvc == null) mPrvSvc = PrivacySettingsManager.getPrivacyService();
 		        PrivacySettings settings = mPrvSvc.getSettings(packageName);
 		        if (settings == null || settings.getSubscriberIdSetting() == PrivacySettings.REAL) {
 		            output = super.getSubscriberId();
@@ -121,7 +111,6 @@ public class PrivacyCDMAPhone extends CDMAPhone{
 		            output = settings.getSubscriberId(); // can be empty, custom or random
 		            mPrvSvc.notification(packageName, settings.getSubscriberIdSetting(), PrivacySettings.DATA_SUBSCRIBER_ID, output);
 		        }
-		    }
 		} catch (PrivacyServiceException e) {
 		    Log.e(P_TAG,"PrivacyCDMAPhone:getSubscriberId: PrivacyServiceException occurred: " + context.getPackageName(), e);
             output = "";
@@ -148,10 +137,7 @@ public class PrivacyCDMAPhone extends CDMAPhone{
 		String output;
 		
 		try {
-		    if (mPrvSvc == null) {
-		        Log.e(P_TAG,"PrivacyCDMAPhone:getLine1AlphaTag: privacy service field is null: " + context.getPackageName());
-		        output = "";
-		    } else {
+		    if (mPrvSvc == null) mPrvSvc = PrivacySettingsManager.getPrivacyService();
 		        PrivacySettings settings = mPrvSvc.getSettings(context.getPackageName());
 		        if (settings == null || settings.getLine1NumberSetting() == PrivacySettings.REAL) {
 		            output = super.getLine1AlphaTag();
@@ -160,7 +146,6 @@ public class PrivacyCDMAPhone extends CDMAPhone{
 		            output = settings.getLine1Number();
 		            mPrvSvc.notification(context.getPackageName(), settings.getLine1NumberSetting(), PrivacySettings.DATA_LINE_1_NUMBER, output);
 		        }
-		    }
 		} catch (PrivacyServiceException e) {
 		    Log.e(P_TAG,"PrivacyCDMAPhone:getLine1AlphaTag: PrivacyServiceException occurred: " + context.getPackageName(), e);
             output = "";
@@ -176,10 +161,7 @@ public class PrivacyCDMAPhone extends CDMAPhone{
 		String packageName = context.getPackageName();
         String output;
         try {
-            if (mPrvSvc == null) {
-                Log.e(P_TAG,"PrivacyCDMAPhone:getVoiceMailAlphaTag: privacy service field is null: " + context.getPackageName());
-                output = "";
-            } else {
+            if (mPrvSvc == null) mPrvSvc = PrivacySettingsManager.getPrivacyService();
                 PrivacySettings settings = mPrvSvc.getSettings(packageName);
                 if (settings == null || settings.getLine1NumberSetting() == PrivacySettings.REAL) {
                     output = super.getVoiceMailAlphaTag();
@@ -188,7 +170,6 @@ public class PrivacyCDMAPhone extends CDMAPhone{
                     output = settings.getLine1Number(); // can be empty, custom or random
                     mPrvSvc.notification(packageName, settings.getLine1NumberSetting(), PrivacySettings.DATA_LINE_1_NUMBER, output);
                 }
-            }
         } catch (PrivacyServiceException e) {
             Log.e(P_TAG,"PrivacyCDMAPhone:getVoiceMailAlphaTag: PrivacyServiceException occurred: " + context.getPackageName(), e);
             output = "";
@@ -203,10 +184,7 @@ public class PrivacyCDMAPhone extends CDMAPhone{
 		String packageName = context.getPackageName();
 		String output;
 		try {
-		    if (mPrvSvc == null) {
-		        Log.e(P_TAG,"PrivacyCDMAPhone:getVoiceMailNumber: privacy service field is null: " + context.getPackageName());
-		        output = null;
-		    } else {
+		    if (mPrvSvc == null) mPrvSvc = PrivacySettingsManager.getPrivacyService();
 		        PrivacySettings settings = mPrvSvc.getSettings(packageName);
 		        if (settings == null || settings.getLine1NumberSetting() == PrivacySettings.REAL) {
     		        output = super.getVoiceMailNumber();
@@ -215,7 +193,6 @@ public class PrivacyCDMAPhone extends CDMAPhone{
 		            output = settings.getLine1Number(); // can be empty, custom or random
 		            mPrvSvc.notification(packageName, settings.getLine1NumberSetting(), PrivacySettings.DATA_LINE_1_NUMBER, output);		            
 		        }
-		    }
 		} catch (PrivacyServiceException e) {
 		    Log.e(P_TAG,"PrivacyCDMAPhone:getVoiceMailNumber: PrivacyServiceException occurred: " + context.getPackageName(), e);
             output = "";
@@ -230,10 +207,7 @@ public class PrivacyCDMAPhone extends CDMAPhone{
 		String packageName = context.getPackageName();
         String output;
         try {
-            if (mPrvSvc == null) {
-                Log.e(P_TAG,"PrivacyCDMAPhone:getDeviceId: privacy service field is null: " + context.getPackageName());
-                output = "";
-            } else {
+            if (mPrvSvc == null) mPrvSvc = PrivacySettingsManager.getPrivacyService();
                 PrivacySettings settings = mPrvSvc.getSettings(packageName);
                 if (settings == null || settings.getDeviceIdSetting() == PrivacySettings.REAL) {
                     output = super.getDeviceId();
@@ -242,8 +216,6 @@ public class PrivacyCDMAPhone extends CDMAPhone{
                     output = settings.getDeviceId(); // can be empty, custom or random
                     mPrvSvc.notification(packageName, settings.getDeviceIdSetting(), PrivacySettings.DATA_DEVICE_ID, output);
                 }
-                
-            }
         } catch (PrivacyServiceException e) {
             Log.e(P_TAG,"PrivacyCDMAPhone:getDeviceId: PrivacyServiceException occurred: " + context.getPackageName(), e);
             output = "";
@@ -258,10 +230,7 @@ public class PrivacyCDMAPhone extends CDMAPhone{
 		String packageName = context.getPackageName();
         String output;
         try {
-            if (mPrvSvc == null) {
-                Log.e(P_TAG,"PrivacyCDMAPhone:getMeid: privacy service field is null: " + context.getPackageName());
-                output = "";
-            } else {
+            if (mPrvSvc == null) mPrvSvc = PrivacySettingsManager.getPrivacyService();
                 PrivacySettings settings = mPrvSvc.getSettings(packageName);
                 if (settings == null || settings.getDeviceIdSetting() == PrivacySettings.REAL) {
                     output = super.getMeid();
@@ -270,7 +239,6 @@ public class PrivacyCDMAPhone extends CDMAPhone{
                     output = settings.getDeviceId(); // can be empty, custom or random
                     mPrvSvc.notification(packageName, settings.getDeviceIdSetting(), PrivacySettings.DATA_DEVICE_ID, output);                    
                 }
-            }
         } catch (PrivacyServiceException e) {
             Log.e(P_TAG,"PrivacyCDMAPhone:getMeid: PrivacyServiceException occurred: " + context.getPackageName(), e);
             output = "";
@@ -285,10 +253,7 @@ public class PrivacyCDMAPhone extends CDMAPhone{
 		String packageName = context.getPackageName();
 		String output;
 		try {
-		    if (mPrvSvc == null) {
-		        Log.e(P_TAG,"PrivacyCDMAPhone:getEsn: privacy service field is null: " + context.getPackageName());
-		        output = "";
-		    } else {
+		    if (mPrvSvc == null) mPrvSvc = PrivacySettingsManager.getPrivacyService();
 		        PrivacySettings settings = mPrvSvc.getSettings(packageName);
 		        if (settings == null || settings.getDeviceIdSetting() == PrivacySettings.REAL) {
 		            output = super.getEsn();
@@ -297,7 +262,6 @@ public class PrivacyCDMAPhone extends CDMAPhone{
 		            output = settings.getDeviceId(); // can be empty, custom or random
 		            mPrvSvc.notification(packageName, settings.getDeviceIdSetting(), PrivacySettings.DATA_DEVICE_ID, output);
 		        }
-		    }
 		} catch (PrivacyServiceException e) {
 		    Log.e(P_TAG,"PrivacyCDMAPhone:getEsn: PrivacyServiceException occurred: " + context.getPackageName(), e);
             output = "";
@@ -311,10 +275,7 @@ public class PrivacyCDMAPhone extends CDMAPhone{
 		Log.i(P_TAG,"Package: " + context.getPackageName() + " asked for getLine1Number()");
 		String output;
 		try {
-		    if (mPrvSvc == null) {
-		        Log.e(P_TAG,"PrivacyCDMAPhone:getLine1Number: privacy service field is null: " + context.getPackageName());
-		        output = "";
-		    } else {
+		    if (mPrvSvc == null) mPrvSvc = PrivacySettingsManager.getPrivacyService();
 		        PrivacySettings settings = mPrvSvc.getSettings(context.getPackageName());
 		        if (settings == null || settings.getLine1NumberSetting() == PrivacySettings.REAL) {
 		            output = super.getLine1Number();
@@ -323,7 +284,6 @@ public class PrivacyCDMAPhone extends CDMAPhone{
 		            output = settings.getLine1Number();
 		            mPrvSvc.notification(context.getPackageName(), settings.getLine1NumberSetting(), PrivacySettings.DATA_LINE_1_NUMBER, output);
 		        }
-		    }
 		} catch (PrivacyServiceException e) {
 		    Log.e(P_TAG,"PrivacyCDMAPhone:getLine1Number: PrivacyServiceException occurred: " + context.getPackageName(), e);
             output = "";
@@ -337,10 +297,7 @@ public class PrivacyCDMAPhone extends CDMAPhone{
 		Log.i(P_TAG,"Package: " + context.getPackageName() + " asked for getCellLocation()");
 		
 		try {
-		    if (mPrvSvc == null) {
-		        Log.e(P_TAG,"PrivacyCDMAPhone:getCellLocation: privacy service field is null: " + context.getPackageName());
-		        return new CdmaCellLocation();
-		    } else {
+		    if (mPrvSvc == null) mPrvSvc = PrivacySettingsManager.getPrivacyService();
 		        PrivacySettings settings = mPrvSvc.getSettings(context.getPackageName());
 		        if (settings == null || (settings.getLocationNetworkSetting() == PrivacySettings.REAL && settings.getLocationGpsSetting() == PrivacySettings.REAL)) {
 		            mPrvSvc.notification(context.getPackageName(), PrivacySettings.REAL, PrivacySettings.DATA_LOCATION_NETWORK, null);
@@ -349,7 +306,6 @@ public class PrivacyCDMAPhone extends CDMAPhone{
 		            mPrvSvc.notification(context.getPackageName(), settings.getLocationNetworkSetting(), PrivacySettings.DATA_LOCATION_NETWORK, null);
 		            return new CdmaCellLocation();
 		        }
-		    }
 		} catch (PrivacyServiceException e) {
 		    Log.e(P_TAG,"PrivacyCDMAPhone:getCellLocation: PrivacyServiceException occurred: " + context.getPackageName(), e);
             mPrvSvc.notification(context.getPackageName(), PrivacySettings.ERROR, PrivacySettings.DATA_LOCATION_NETWORK, null);
@@ -362,10 +318,7 @@ public class PrivacyCDMAPhone extends CDMAPhone{
 		Log.i(P_TAG,"Package: " + context.getPackageName() + " asked for getPhoneSubInfo()");
 		
 		try {
-		    if (mPrvSvc == null) {
-		        Log.e(P_TAG,"PrivacyCDMAPhone:getPhoneSubInfo: privacy service field is null: " + context.getPackageName());
-		        return null;
-		    } else {
+		    if (mPrvSvc == null) mPrvSvc = PrivacySettingsManager.getPrivacyService();
 		        PrivacySettings settings = mPrvSvc.getSettings(context.getPackageName());
 		        if (settings == null || settings.getNetworkInfoSetting() == PrivacySettings.REAL) {
 		            mPrvSvc.notification(context.getPackageName(), PrivacySettings.REAL, PrivacySettings.DATA_LOCATION_NETWORK, null);
@@ -374,7 +327,6 @@ public class PrivacyCDMAPhone extends CDMAPhone{
 		            mPrvSvc.notification(context.getPackageName(), settings.getLocationNetworkSetting(), PrivacySettings.DATA_LOCATION_NETWORK, null);
 		            return null;
 		        }
-		    }
 		} catch (PrivacyServiceException e) {
 		    Log.e(P_TAG,"PrivacyCDMAPhone:getPhoneSubInfo: PrivacyServiceException occurred: " + context.getPackageName(), e);
             mPrvSvc.notification(context.getPackageName(), PrivacySettings.ERROR, PrivacySettings.DATA_LOCATION_NETWORK, null);
@@ -386,12 +338,7 @@ public class PrivacyCDMAPhone extends CDMAPhone{
 	public ServiceState getServiceState() {
 		try{
 			Log.i(P_TAG,"Package: " + context.getPackageName() + " asked for getServiceState()");
-		    if (mPrvSvc == null) {
-		        Log.e(P_TAG,"PrivacyCDMAPhone:getServiceState: privacy service field is null: " + context.getPackageName());
-                ServiceState output = super.getServiceState();
-                output.setOperatorName("", "", "");
-                return output;
-		    } else {
+			if (mPrvSvc == null) mPrvSvc = PrivacySettingsManager.getPrivacyService();
 		        PrivacySettings settings = mPrvSvc.getSettings(context.getPackageName());
 		        if (settings == null || settings.getNetworkInfoSetting() == PrivacySettings.REAL) {
 		            mPrvSvc.notification(context.getPackageName(), PrivacySettings.REAL, PrivacySettings.DATA_LOCATION_NETWORK, null);
@@ -402,7 +349,6 @@ public class PrivacyCDMAPhone extends CDMAPhone{
 		            output.setOperatorName("", "", "");
 		            return output;
 		        }
-		    }
 		} catch (PrivacyServiceException e) {
 		    Log.e(P_TAG,"PrivacyCDMAPhone:getServiceState: PrivacyServiceException occurred: " + context.getPackageName(), e);
 		    mPrvSvc.notification(context.getPackageName(), PrivacySettings.ERROR, PrivacySettings.DATA_LOCATION_NETWORK, null);
@@ -420,10 +366,7 @@ public class PrivacyCDMAPhone extends CDMAPhone{
 	@Override
     public Connection dial(String dialNumber) throws CallStateException{
 	    try {
-	        if (mPrvSvc == null) {
-	            Log.e(P_TAG,"PrivacyCDMAPhone:dial: privacy service field is null: " + context.getPackageName());
-	            throw new CallStateException();
-	        } else {
+	        if (mPrvSvc == null) mPrvSvc = PrivacySettingsManager.getPrivacyService();
 	            PrivacySettings settings = mPrvSvc.getSettings(context.getPackageName());
 	            if (settings == null || settings.getPhoneCallSetting() == PrivacySettings.REAL) {
 	                mPrvSvc.notification(context.getPackageName(), PrivacySettings.REAL, PrivacySettings.DATA_PHONE_CALL, null);
@@ -432,7 +375,6 @@ public class PrivacyCDMAPhone extends CDMAPhone{
 	                mPrvSvc.notification(context.getPackageName(), PrivacySettings.EMPTY, PrivacySettings.DATA_PHONE_CALL, null);
 	                throw new CallStateException();
 	            }
-	        }
 	    } catch (PrivacyServiceException e) {
 	        Log.e(P_TAG,"PrivacyCDMAPhone:dial: PrivacyServiceException occurred: " + context.getPackageName(), e);
             mPrvSvc.notification(context.getPackageName(), PrivacySettings.ERROR, PrivacySettings.DATA_PHONE_CALL, null);
@@ -443,10 +385,7 @@ public class PrivacyCDMAPhone extends CDMAPhone{
 	@Override
     public Connection dial (String dialNumber, UUSInfo uusInfo) throws CallStateException{
 	    try {
-	        if (mPrvSvc == null) {
-	            Log.e(P_TAG,"PrivacyCDMAPhone:dial: privacy service field is null: " + context.getPackageName());
-	            throw new CallStateException();
-	        } else {
+	        if (mPrvSvc == null) mPrvSvc = PrivacySettingsManager.getPrivacyService();
 	            PrivacySettings settings = mPrvSvc.getSettings(context.getPackageName());
 	            if (settings == null || settings.getPhoneCallSetting() == PrivacySettings.REAL) {
 	                mPrvSvc.notification(context.getPackageName(), PrivacySettings.REAL, PrivacySettings.DATA_PHONE_CALL, null);
@@ -455,7 +394,6 @@ public class PrivacyCDMAPhone extends CDMAPhone{
 	                mPrvSvc.notification(context.getPackageName(), PrivacySettings.EMPTY, PrivacySettings.DATA_PHONE_CALL, null);
 	                throw new CallStateException();
 	            }
-	        }
 	    } catch (PrivacyServiceException e) {
 	        Log.e(P_TAG,"PrivacyCDMAPhone:dial: PrivacyServiceException occurred: " + context.getPackageName(), e);
             mPrvSvc.notification(context.getPackageName(), PrivacySettings.ERROR, PrivacySettings.DATA_PHONE_CALL, null);

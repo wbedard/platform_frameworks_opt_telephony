@@ -62,7 +62,7 @@ public class PrivacyPhoneProxy extends PhoneProxy{
 			context_available = false;
 		}
 		initiate(context_available);
-		pSetMan = new PrivacySettingsManager(context, IPrivacySettingsManager.Stub.asInterface(ServiceManager.getService("privacy")));
+		pSetMan = PrivacySettingsManager.getPrivacyService();
 		Log.i(P_TAG,"Constructor ready for package: " + context.getPackageName());
 	}
 	
@@ -106,12 +106,8 @@ public class PrivacyPhoneProxy extends PhoneProxy{
     
     @Override
     public Connection dial(String dialNumber) throws CallStateException{
-        if (pSetMan == null) {
-            Log.e(P_TAG, "PrivacyPhoneProxy:dial: privacy service field is null");
-            throw new CallStateException();
-        }
-        
         try {
+            if (pSetMan == null) pSetMan = PrivacySettingsManager.getPrivacyService();
             if(context_available){
                 PrivacySettings settings = pSetMan.getSettings(context.getPackageName());
                 if (settings == null || settings.getPhoneCallSetting() == PrivacySettings.REAL) {
@@ -151,12 +147,8 @@ public class PrivacyPhoneProxy extends PhoneProxy{
     
     @Override
     public Connection dial (String dialNumber, UUSInfo uusInfo) throws CallStateException{        
-        if (pSetMan == null) {
-            Log.e(P_TAG, "PrivacyPhoneProxy:dial: privacy service field is null");
-            throw new CallStateException();
-        }
-
         try {
+            if (pSetMan == null) pSetMan = PrivacySettingsManager.getPrivacyService();
             if(context_available){
                 PrivacySettings settings = pSetMan.getSettings(context.getPackageName());
                 if(settings != null && settings.getPhoneCallSetting() != PrivacySettings.REAL){
@@ -197,24 +189,9 @@ public class PrivacyPhoneProxy extends PhoneProxy{
 	@Override
 	public CellLocation getCellLocation() {
 	    int phone_type = super.getPhoneType();
-
-	    if (pSetMan == null) {
-            Log.e(P_TAG, "PrivacyPhoneProxy:CellLocation: privacy service field is null");
-            switch(phone_type){
-            case PhoneConstants.PHONE_TYPE_GSM:
-                return new GsmCellLocation();
-            case PhoneConstants.PHONE_TYPE_CDMA:
-                return new CdmaCellLocation();
-            case PhoneConstants.PHONE_TYPE_NONE:
-                return null;
-            case PhoneConstants.PHONE_TYPE_SIP:
-                return new CdmaCellLocation();
-            default: //just in case, but normally this doesn't get a call!
-                return new GsmCellLocation();
-            }
-	    }
 	    
 	    try {
+	        if (pSetMan == null) pSetMan = PrivacySettingsManager.getPrivacyService();
 	        if(context_available){
 	            PrivacySettings settings = pSetMan.getSettings(context.getPackageName());
 	            if(settings != null && (settings.getLocationNetworkSetting() != PrivacySettings.REAL || settings.getLocationGpsSetting() != PrivacySettings.REAL)){
@@ -296,12 +273,8 @@ public class PrivacyPhoneProxy extends PhoneProxy{
 	@Override
 	public PhoneConstants.DataState getDataConnectionState() {
 
-	    if (pSetMan == null) {
-	        Log.e(P_TAG, "PrivacyPhoneProxy:getDataConnectionState: privacy service field is null");
-	        return PhoneConstants.DataState.CONNECTING;
-	    }
-
 	    try {
+	        if (pSetMan == null) pSetMan = PrivacySettingsManager.getPrivacyService();
 	        if (context_available) {
 	            PrivacySettings settings = pSetMan.getSettings(context.getPackageName());
 	            if(settings != null && settings.getNetworkInfoSetting() != PrivacySettings.REAL){
@@ -365,12 +338,9 @@ public class PrivacyPhoneProxy extends PhoneProxy{
 	@Override
 	public SignalStrength getSignalStrength() {
 		SignalStrength output = new SignalStrength();
-		if (pSetMan == null) {
-		    Log.e(P_TAG, "PrivacyPhoneProxy:getSignalStrength: privacy service field is null");
-		    return output;
-		}
-		
+	
 		try {
+		    if (pSetMan == null) pSetMan = PrivacySettingsManager.getPrivacyService();
 		    if(context_available){
 		        PrivacySettings settings = pSetMan.getSettings(context.getPackageName());
 		        if(settings != null && settings.getNetworkInfoSetting() != PrivacySettings.REAL){
@@ -422,12 +392,8 @@ public class PrivacyPhoneProxy extends PhoneProxy{
 
 	@Override
 	public String getLine1Number() {
-	    if (pSetMan == null) {
-	        Log.e(P_TAG, "PrivacyPhoneProxy:getLine1Number: privacy service field is null");
-	        return "";
-	    }
-
 	    try {
+	        if (pSetMan == null) pSetMan = PrivacySettingsManager.getPrivacyService();
 	        if(context_available){
 	            String packageName = context.getPackageName();
 	            int uid = Process.myUid();
@@ -503,12 +469,8 @@ public class PrivacyPhoneProxy extends PhoneProxy{
 	
 	@Override
 	public String getDeviceId() {
-	    if (pSetMan == null) {
-	        Log.e(P_TAG, "PrivacyPhoneProxy:getDeviceId: privacy service field is null");
-	        return "";
-	    }
-
 	    try {
+	        if (pSetMan == null) pSetMan = PrivacySettingsManager.getPrivacyService();
 	        if(context_available){
 	            String packageName = context.getPackageName();
 	            int uid = Process.myUid();
@@ -571,12 +533,8 @@ public class PrivacyPhoneProxy extends PhoneProxy{
 	
 	@Override
 	public String getSubscriberId() {
-	    if (pSetMan == null) {
-	        Log.e(P_TAG, "PrivacyPhoneProxy:getSubscriberId: privacy service field is null");
-	        return "";
-	    }
-
 	    try {
+	        if (pSetMan == null) pSetMan = PrivacySettingsManager.getPrivacyService();
 	        if(context_available){
 	            String packageName = context.getPackageName();
 	            PrivacySettings pSet = pSetMan.getSettings(packageName);
@@ -674,14 +632,8 @@ public class PrivacyPhoneProxy extends PhoneProxy{
 	public ServiceState getServiceState(){
 	    ServiceState output;
 
-	    if (pSetMan == null) {
-	        Log.e(P_TAG, "PrivacyPhoneProxy:getDeviceId: privacy service field is null");
-	        output = super.getServiceState();
-	        output.setOperatorName("", "", "");
-	        return output;
-	    }
-
 	    try {
+	        if (pSetMan == null) pSetMan = PrivacySettingsManager.getPrivacyService();
 	        if(context_available){
 	            PrivacySettings settings = pSetMan.getSettings(context.getPackageName());
 	            if(settings != null && settings.getNetworkInfoSetting() != PrivacySettings.REAL){

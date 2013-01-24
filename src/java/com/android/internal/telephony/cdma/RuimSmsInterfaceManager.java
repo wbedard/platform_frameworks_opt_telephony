@@ -96,11 +96,7 @@ public class RuimSmsInterfaceManager extends IccSmsInterfaceManager {
             PrivacySettings settings = null;
             switch (accessType){
                 case ACCESS_TYPE_SMS_MMS:
-                    if(pSetMan == null) pSetMan = new PrivacySettingsManager(null, IPrivacySettingsManager.Stub.asInterface(ServiceManager.getService("privacy")));
-                    if (pSetMan == null) {
-                        Log.d(P_TAG, "RuimSmsInterfaceManager:IsAllowed: privacy service field is null");
-                        return false;
-                    }
+                    if (pSetMan == null) pSetMan = PrivacySettingsManager.getPrivacyService();
                     if (packageNames == null) {
                         Log.d(P_TAG, "RuimSmsInterfaceManager:IsAllowed: packageNames is null: ALLOW");
                         notify(accessType, null, PrivacySettings.REAL);
@@ -118,11 +114,7 @@ public class RuimSmsInterfaceManager extends IccSmsInterfaceManager {
                     return true;
 
                 case ACCESS_TYPE_ICC:
-                    if(pSetMan == null) pSetMan = new PrivacySettingsManager(null, IPrivacySettingsManager.Stub.asInterface(ServiceManager.getService("privacy")));
-                    if (pSetMan == null) {
-                        Log.d(P_TAG, "RuimSmsInterfaceManager:IsAllowed: privacy service field is null");
-                        return false;
-                    }
+                    if (pSetMan == null) pSetMan = PrivacySettingsManager.getPrivacyService();
                     if (packageNames == null) {
                         Log.d(P_TAG, "RuimSmsInterfaceManager:IsAllowed: packageNames is null: ALLOW");
                         notify(accessType, null, PrivacySettings.REAL);

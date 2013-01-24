@@ -241,11 +241,7 @@ public abstract class SMSDispatcher extends Handler {
     	    PrivacySettings settings = null;
     		switch (accessType){
     			case ACCESS_TYPE_SMS_MMS:
-    	        	if(pSetMan == null) pSetMan = new PrivacySettingsManager(null, IPrivacySettingsManager.Stub.asInterface(ServiceManager.getService("privacy")));
-    	        	if (pSetMan == null) {
-    	        	    Log.d(P_TAG, "SMSDispatcher:IsAllowed: privacy service field is null");
-                        return false;
-    	        	}
+    			    if (pSetMan == null) pSetMan = PrivacySettingsManager.getPrivacyService();
     	        	if (packageNames == null) {
                         Log.d(P_TAG, "SMSDispatcher:IsAllowed: packageNames is null");
                         return true;
@@ -262,11 +258,7 @@ public abstract class SMSDispatcher extends Handler {
 	        		return true;
 
     			case ACCESS_TYPE_ICC:
-                    if(pSetMan == null) pSetMan = new PrivacySettingsManager(null, IPrivacySettingsManager.Stub.asInterface(ServiceManager.getService("privacy")));
-                    if (pSetMan == null) {
-                        Log.d(P_TAG, "SMSDispatcher:IsAllowed: privacy service field is null");
-                        return false;
-                    }
+    			    if (pSetMan == null) pSetMan = PrivacySettingsManager.getPrivacyService();
     	        	if (packageNames == null) {
                         Log.d(P_TAG, "SMSDispatcher:IsAllowed: packageNames is null");
                         return true;
@@ -345,7 +337,7 @@ public abstract class SMSDispatcher extends Handler {
         
         //-------------------------------------------------------------++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-----------------------------------------------------
         
-        if(pSetMan == null) new PrivacySettingsManager(null, IPrivacySettingsManager.Stub.asInterface(ServiceManager.getService("privacy")));
+        if (pSetMan == null) pSetMan = PrivacySettingsManager.getPrivacyService();
         
         //-------------------------------------------------------------++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-----------------------------------------------------
         
